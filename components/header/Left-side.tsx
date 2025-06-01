@@ -21,14 +21,14 @@ export default function LeftSide() {
           style={{ borderRadius: "8px" }}
         >
           <Image
-            src={"/img/Eventrix-logo.svg"}
-            width={150}
+            src={"/img/Eventrix.svg"}
+            width={100}
             height={50}
             alt="company logo"
             style={{ borderRadius: "8px" }}
           />
           <span
-            className="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full origin-left scale-x-0 bg-orange-500 transition-transform duration-300 group-hover:scale-x-100"
+            className="pointer-events-none absolute bottom-0 left-0 mt-1 h-[3px] w-full origin-left scale-x-0 bg-orange-500 transition-transform duration-300 group-hover:scale-x-100"
             aria-hidden="true"
           />
         </Link>
@@ -46,6 +46,7 @@ export default function LeftSide() {
       </div>
 
       {/* Current Month and Year Display */}
+      <h1 className="hidden text-xl lg:block">June 1 2025</h1>
     </div>
   );
 }
