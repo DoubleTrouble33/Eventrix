@@ -14,12 +14,22 @@ export default function LeftSide() {
         >
           <Menu className="size-6"></Menu>
         </Button>
-        <Link href="/" className="mr-2">
+
+        <Link
+          href="/"
+          className="group relative mr-2 inline-block"
+          style={{ borderRadius: "8px" }}
+        >
           <Image
             src={"/img/Eventrix-logo.svg"}
             width={150}
             height={50}
             alt="company logo"
+            style={{ borderRadius: "8px" }}
+          />
+          <span
+            className="pointer-events-none absolute bottom-0 left-0 h-[3px] w-full origin-left scale-x-0 bg-orange-500 transition-transform duration-300 group-hover:scale-x-100"
+            aria-hidden="true"
           />
         </Link>
 
