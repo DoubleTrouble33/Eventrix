@@ -2,6 +2,7 @@ import { Menu } from "lucide-react";
 import { Button } from "../ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
 
 export default function LeftSide() {
   return (
@@ -29,6 +30,10 @@ export default function LeftSide() {
         Today
       </Button>
       {/* Navigation Controls */}
+      <div className="flex items-center gap-3">
+        <MdKeyboardArrowLeft className="size-6 cursor-pointer font-bold" />
+        <MdKeyboardArrowRight className="size-6 cursor-pointer font-bold" />
+      </div>
 
       {/* Current Month and Year Display */}
     </div>
