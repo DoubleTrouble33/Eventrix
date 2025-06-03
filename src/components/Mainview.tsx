@@ -10,7 +10,6 @@ export default function MainView() {
   return (
     <div className="flex">
       <SideBar />
-
       <div className="w-full flex-1">
         {selectedView === "month" && <MonthView />}
         {selectedView === "week" && <WeekView />}

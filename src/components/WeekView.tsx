@@ -1,5 +1,10 @@
 import { getHours, getWeekDays } from "@/lib/getTime";
-import { getEventsForDay, useDateStore, useEventStore } from "@/lib/store";
+import {
+  getEventsForDay,
+  useDateStore,
+  useEventStore,
+  useCategoryStore,
+} from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
@@ -11,7 +16,8 @@ import { EventRenderer } from "./ui/event-renderer";
 export default function WeekView() {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events, setEvents, openEventSummary } = useEventStore(); // Added setEvents here
+  const { events, setEvents, openEventSummary } = useEventStore();
+  const { selectedCategory } = useCategoryStore();
   const [showEventPopover, setShowEventPopover] = useState(false);
   const [selectedDay, setSelectedDay] = useState<dayjs.Dayjs | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
@@ -73,7 +79,10 @@ export default function WeekView() {
           {/* Week day boxes  */}
           {days.map(({ currentDate, today }, index) => {
             const dayDate = userSelectedDate.startOf("week").add(index, "day");
-            const dayEvents = getEventsForDay(events, dayDate);
+            const dayEvents = getEventsForDay(events, dayDate).filter(
+              (event) =>
+                !selectedCategory || event.categoryId === selectedCategory,
+            );
 
             return (
               <div key={index} className="relative border-r border-gray-300">
@@ -117,7 +126,7 @@ export default function WeekView() {
                             );
                             setEvents(updatedEvents);
                           }}
-                          view="week" // Fixed to "week"
+                          variant="week"
                         />
                       ))}
                     </div>

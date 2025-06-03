@@ -1,4 +1,9 @@
-import { getEventsForDay, useDateStore, useEventStore } from "@/lib/store";
+import {
+  getEventsForDay,
+  useDateStore,
+  useEventStore,
+  useCategoryStore,
+} from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
@@ -12,8 +17,9 @@ export default function DayView() {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const [showEventPopover, setShowEventPopover] = useState(false);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
-  const { events, setEvents, openEventSummary } = useEventStore(); // Added setEvents here
+  const { events, setEvents, openEventSummary } = useEventStore();
   const { userSelectedDate, setDate } = useDateStore();
+  const { selectedCategory } = useCategoryStore();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -25,8 +31,10 @@ export default function DayView() {
   const isToday =
     userSelectedDate.format("DD-MM-YY") === dayjs().format("DD-MM-YY");
 
-  // Use userSelectedDate instead of day
-  const dayEvents = getEventsForDay(events, userSelectedDate);
+  // Filter events by day and selected category
+  const dayEvents = getEventsForDay(events, userSelectedDate).filter(
+    (event) => !selectedCategory || event.categoryId === selectedCategory,
+  );
 
   const handleAddEvent = (hour: number) => {
     setSelectedHour(hour);
@@ -67,7 +75,7 @@ export default function DayView() {
           </div>
 
           {/* Day/Boxes Column */}
-          <div className="relative border-r border-gray-300">
+          <div className="relative">
             {getHours.map((hour, i) => {
               const hourEvents = dayEvents.filter(
                 (event) => event.date.hour() === hour.hour(),
@@ -108,7 +116,7 @@ export default function DayView() {
                         );
                         setEvents(updatedEvents);
                       }}
-                      view="day" // Fixed to "day"
+                      variant="day"
                     />
                   ))}
                 </div>
