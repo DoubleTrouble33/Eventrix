@@ -3,13 +3,23 @@
 import { useEventStore } from "@/lib/store";
 import { ScrollArea } from "./scroll-area";
 import { Button } from "./button";
-import { X, Trash } from "lucide-react";
+import { X, Trash, Repeat } from "lucide-react";
 
 export function EventSummary() {
   const { selectedEvent, closeEventSummary, events, setEvents } =
     useEventStore();
 
   if (!selectedEvent) return null;
+
+  const daysOfWeek = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
 
   const handleDelete = () => {
     const updatedEvents = events.filter((e) => e.id !== selectedEvent.id);
@@ -34,7 +44,23 @@ export function EventSummary() {
             </h2>
             <p className="text-sm text-gray-500">
               {selectedEvent.date.format("MMMM D, YYYY")}
+              {selectedEvent.endTime && (
+                <>
+                  <br />
+                  {selectedEvent.date.format("h:mm A")} -{" "}
+                  {selectedEvent.endTime.format("h:mm A")}
+                </>
+              )}
             </p>
+            {selectedEvent.isRepeating && selectedEvent.repeatDays && (
+              <div className="mt-1 flex items-center text-sm text-indigo-600">
+                <Repeat className="mr-1 h-4 w-4" />
+                Repeats every:{" "}
+                {selectedEvent.repeatDays
+                  .map((day) => daysOfWeek[day].substring(0, 3))
+                  .join(", ")}
+              </div>
+            )}
           </div>
 
           <ScrollArea className="h-32 w-full rounded-md border p-4">

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useEventStore } from "@/lib/store";
+import { getEventsForDay, useEventStore } from "@/lib/store";
 import dayjs from "dayjs";
 import React, { useState } from "react";
 import { EventPopover } from "./ui/event-popover";
@@ -26,9 +26,7 @@ export default function MonthViewBox({
   const isToday = day.format("DD-MM-YY") === dayjs().format("DD-MM-YY");
 
   // Filter events for this day
-  const dayEvents = events.filter(
-    (event) => event.date.format("DD-MM-YY") === day.format("DD-MM-YY"),
-  );
+  const dayEvents = getEventsForDay(events, day);
 
   return (
     <div

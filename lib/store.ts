@@ -19,8 +19,12 @@ interface DateStoreType {
 export type CalendarEventType = {
   id: string;
   title: string;
-  date: dayjs.Dayjs;
   description: string;
+  date: dayjs.Dayjs;
+  endTime?: dayjs.Dayjs;
+  isRepeating?: boolean;
+  repeatDays?: number[]; // 0-6 (Sunday-Saturday)
+  repeatUntil?: dayjs.Dayjs; // Optional end date for repeats
 };
 
 type EventStore = {
@@ -53,6 +57,35 @@ export const useViewStore = create<ViewStoreType>()(
     ),
   ),
 );
+
+export function getEventsForDay(events: CalendarEventType[], day: dayjs.Dayjs) {
+  return events.filter((event) => {
+    // Check if event matches the exact day
+    if (event.date.isSame(day, "day")) return true;
+
+    // Check for repeating events
+    if (event.isRepeating && event.repeatDays) {
+      const eventDayOfWeek = event.date.day();
+      const currentDayOfWeek = day.day();
+
+      // Check if today is one of the repeat days
+      const isRepeatDay = event.repeatDays.includes(currentDayOfWeek);
+
+      // Check if the current day is after the original event date
+      const isAfterOriginalDate = day.isAfter(event.date, "day");
+
+      // Optional: Check if before repeatUntil date if specified
+      const isBeforeRepeatEnd = event.repeatUntil
+        ? day.isBefore(event.repeatUntil, "day") ||
+          day.isSame(event.repeatUntil, "day")
+        : true;
+
+      return isRepeatDay && isAfterOriginalDate && isBeforeRepeatEnd;
+    }
+
+    return false;
+  });
+}
 
 export const useDateStore = create<DateStoreType>()(
   devtools(
