@@ -3,7 +3,7 @@
 import { useEventStore } from "@/lib/store";
 import { ScrollArea } from "./scroll-area";
 import { Button } from "./button";
-import { X, Trash, Repeat } from "lucide-react";
+import { X, Trash, Users } from "lucide-react";
 
 export function EventSummary() {
   const { selectedEvent, closeEventSummary, events, setEvents } =
@@ -68,6 +68,30 @@ export function EventSummary() {
               {selectedEvent.description || "No description provided."}
             </p>
           </ScrollArea>
+
+          {selectedEvent.guests && selectedEvent.guests.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-gray-500" />
+                <h3 className="text-sm font-medium">
+                  Guests ({selectedEvent.guests.length})
+                </h3>
+              </div>
+              <ScrollArea className="h-32 w-full rounded-md border bg-gray-50 p-2">
+                <div className="space-y-2">
+                  {selectedEvent.guests.map((guest) => (
+                    <div
+                      key={guest.email}
+                      className="rounded-md bg-white p-2 shadow-sm"
+                    >
+                      <div className="font-medium">{guest.name}</div>
+                      <div className="text-sm text-gray-500">{guest.email}</div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2">
             <Button

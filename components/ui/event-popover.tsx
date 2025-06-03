@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { useEventStore } from "@/lib/store";
+import { useEventStore, GuestType } from "@/lib/store";
 import { ScrollArea } from "./scroll-area";
 import { Input } from "./input";
 import { Button } from "./button";
-import { X, Repeat, ChevronDown } from "lucide-react";
+import {
+  X,
+  Repeat,
+  ChevronDown,
+  UserPlus,
+  Search,
+  XCircle,
+} from "lucide-react";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
 
@@ -22,6 +29,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatDays, setRepeatDays] = useState<number[]>([]);
   const [showRepeatOptions, setShowRepeatOptions] = useState(false);
+  const [guests, setGuests] = useState<GuestType[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showGuestSearch, setShowGuestSearch] = useState(false);
 
   const { events, setEvents, closePopover } = useEventStore();
 
@@ -34,6 +44,31 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     { id: 5, name: "Friday" },
     { id: 6, name: "Saturday" },
   ];
+
+  // Mock search results - this will be replaced with actual DB search later
+  const mockSearchResults = searchTerm
+    ? [
+        { id: "1", name: "John Doe", email: "john@example.com" },
+        { id: "2", name: "Jane Smith", email: "jane@example.com" },
+        { id: "3", name: "Bob Wilson", email: "bob@example.com" },
+      ].filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    : [];
+
+  const addGuest = (guest: GuestType) => {
+    if (!guests.find((g) => g.email === guest.email)) {
+      setGuests([...guests, guest]);
+    }
+    setSearchTerm("");
+    setShowGuestSearch(false);
+  };
+
+  const removeGuest = (email: string) => {
+    setGuests(guests.filter((g) => g.email !== email));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +94,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
       endTime: endDate,
       isRepeating,
       repeatDays: isRepeating ? repeatDays : undefined,
+      guests: guests.length > 0 ? guests : undefined,
     };
 
     setEvents([...events, newEvent]);
@@ -154,6 +190,95 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                 className="min-h-[8rem] w-full resize-none border-0 p-4 focus:outline-none"
               />
             </ScrollArea>
+          </div>
+
+          <div className="space-y-2">
+            <label className="mb-2 block text-sm font-medium">Guests</label>
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  onClick={() => setShowGuestSearch(!showGuestSearch)}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Add Guests
+                </Button>
+                {guests.length > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {guests.length} guest{guests.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+
+              {showGuestSearch && (
+                <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-300 bg-white p-2 shadow-lg">
+                  <div className="relative mb-2">
+                    <Search className="absolute top-2.5 left-2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by name or email"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+
+                  <ScrollArea className="max-h-48">
+                    <div className="space-y-1">
+                      {mockSearchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          type="button"
+                          onClick={() => addGuest(result)}
+                          className="flex w-full items-center justify-between rounded-md p-2 text-left hover:bg-gray-100"
+                        >
+                          <div>
+                            <div className="font-medium">{result.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {result.email}
+                            </div>
+                          </div>
+                          <UserPlus className="h-4 w-4 text-gray-400" />
+                        </button>
+                      ))}
+                      {searchTerm && mockSearchResults.length === 0 && (
+                        <div className="p-2 text-sm text-gray-500">
+                          No results found
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+
+            {guests.length > 0 && (
+              <ScrollArea className="mt-2 max-h-32 rounded-md border p-2">
+                <div className="space-y-1">
+                  {guests.map((guest) => (
+                    <div
+                      key={guest.email}
+                      className="flex items-center justify-between rounded-md bg-gray-50 p-2"
+                    >
+                      <div>
+                        <div className="font-medium">{guest.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {guest.email}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeGuest(guest.email)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <XCircle className="h-5 w-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
           </div>
 
           <div className="space-y-2">

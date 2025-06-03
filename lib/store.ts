@@ -16,6 +16,12 @@ interface DateStoreType {
   setMonth: (index: number) => void;
 }
 
+export type GuestType = {
+  id?: string;
+  name: string;
+  email: string;
+};
+
 export type CalendarEventType = {
   id: string;
   title: string;
@@ -25,6 +31,7 @@ export type CalendarEventType = {
   isRepeating?: boolean;
   repeatDays?: number[]; // 0-6 (Sunday-Saturday)
   repeatUntil?: dayjs.Dayjs; // Optional end date for repeats
+  guests?: GuestType[];
 };
 
 type EventStore = {
