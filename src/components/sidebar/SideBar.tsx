@@ -105,8 +105,8 @@ const SideBar: React.FC<SideBarProps> = ({ className }) => {
           {currentDate.format("MMMM YYYY")}
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs">
-          {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-            <div key={day} className="text-gray-500">
+          {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+            <div key={`day-header-${index}`} className="text-gray-500">
               {day}
             </div>
           ))}

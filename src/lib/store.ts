@@ -35,11 +35,11 @@ export type CalendarEventType = {
   date: dayjs.Dayjs;
   endTime?: dayjs.Dayjs;
   isRepeating?: boolean;
-  repeatDays?: number[]; // 0-6 (Sunday-Saturday)
-  repeatUntil?: dayjs.Dayjs; // Optional end date for repeats
+  repeatDays?: number[];
+  repeatDuration?: "week" | "2weeks" | "month" | "3months" | "6months";
   guests?: GuestType[];
   isPublic: boolean;
-  categoryId: string; // Reference to EventCategory
+  categoryId: string;
 };
 
 type EventStore = {
@@ -118,34 +118,56 @@ export const useViewStore = create<ViewStoreType>()(
   ),
 );
 
-export function getEventsForDay(events: CalendarEventType[], day: dayjs.Dayjs) {
+export const getEventsForDay = (
+  events: CalendarEventType[],
+  date: dayjs.Dayjs,
+) => {
   return events.filter((event) => {
-    // Check if event matches the exact day
-    if (event.date.isSame(day, "day")) return true;
-
-    // Check for repeating events
-    if (event.isRepeating && event.repeatDays) {
-      const eventDayOfWeek = event.date.day();
-      const currentDayOfWeek = day.day();
-
-      // Check if today is one of the repeat days
-      const isRepeatDay = event.repeatDays.includes(currentDayOfWeek);
-
-      // Check if the current day is after the original event date
-      const isAfterOriginalDate = day.isAfter(event.date, "day");
-
-      // Optional: Check if before repeatUntil date if specified
-      const isBeforeRepeatEnd = event.repeatUntil
-        ? day.isBefore(event.repeatUntil, "day") ||
-          day.isSame(event.repeatUntil, "day")
-        : true;
-
-      return isRepeatDay && isAfterOriginalDate && isBeforeRepeatEnd;
+    if (!event.isRepeating) {
+      return event.date.format("YYYY-MM-DD") === date.format("YYYY-MM-DD");
     }
 
-    return false;
+    // For repeating events, check if the date matches any of the repeat days
+    // and is within the repeat duration
+    const eventDate = event.date;
+    const repeatDays = event.repeatDays || [];
+    const repeatDuration = event.repeatDuration || "month";
+
+    // Calculate the end date based on repeat duration
+    let endDate;
+    switch (repeatDuration) {
+      case "week":
+        endDate = eventDate.add(1, "week").subtract(1, "day");
+        break;
+      case "2weeks":
+        endDate = eventDate.add(2, "week").subtract(1, "day");
+        break;
+      case "month":
+        endDate = eventDate.add(1, "month").subtract(1, "day");
+        break;
+      case "3months":
+        endDate = eventDate.add(3, "month").subtract(1, "day");
+        break;
+      case "6months":
+        endDate = eventDate.add(6, "month").subtract(1, "day");
+        break;
+      default:
+        endDate = eventDate.add(1, "month").subtract(1, "day");
+    }
+
+    // Check if the current date is within the repeat duration
+    // Exclude the end date
+    if (
+      date.isBefore(eventDate.startOf("day")) ||
+      date.isAfter(endDate.endOf("day"))
+    ) {
+      return false;
+    }
+
+    // Check if the day of week matches any of the repeat days
+    return repeatDays.includes(date.day());
   });
-}
+};
 
 export const useDateStore = create<DateStoreType>()(
   devtools(
@@ -175,9 +197,9 @@ export const useEventStore = create<EventStore>((set) => ({
   openPopover: () => set({ isPopoverOpen: true }),
   closePopover: () => set({ isPopoverOpen: false }),
   openEventSummary: (event) =>
-    set({ isEventSummaryOpen: true, selectedEvent: event }),
+    set({ selectedEvent: event, isEventSummaryOpen: true }),
   closeEventSummary: () =>
-    set({ isEventSummaryOpen: false, selectedEvent: null }),
+    set({ selectedEvent: null, isEventSummaryOpen: false }),
 }));
 
 export const useToggleSideBarStore = create<ToggleSideBarType>()(

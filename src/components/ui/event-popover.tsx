@@ -31,6 +31,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatDays, setRepeatDays] = useState<number[]>([]);
   const [showRepeatOptions, setShowRepeatOptions] = useState(false);
+  const [repeatDuration, setRepeatDuration] = useState<
+    "week" | "2weeks" | "month" | "3months" | "6months"
+  >("month");
   const [guests, setGuests] = useState<GuestType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showGuestSearch, setShowGuestSearch] = useState(false);
@@ -100,6 +103,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         .set("minute", parseInt(endTime.split(":")[1])),
       isRepeating,
       repeatDays: isRepeating ? repeatDays : undefined,
+      repeatDuration: isRepeating ? repeatDuration : undefined,
       guests,
       isPublic,
       categoryId: selectedCategoryId,
@@ -379,49 +383,81 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
             </div>
 
             {isRepeating && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowRepeatOptions(!showRepeatOptions)}
-                  className="flex w-full items-center justify-between rounded-md border border-gray-300 px-3 py-2 text-left text-sm"
-                >
-                  <span>
-                    {repeatDays.length === 0
-                      ? "Select days"
-                      : daysOfWeek
-                          .filter((day) => repeatDays.includes(day.id))
-                          .map((day) => day.name.substring(0, 3))
-                          .join(", ")}
-                  </span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${showRepeatOptions ? "rotate-180" : ""}`}
-                  />
-                </button>
+              <>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowRepeatOptions(!showRepeatOptions)}
+                    className="flex w-full items-center justify-between rounded-md border border-gray-300 px-3 py-2 text-left text-sm"
+                  >
+                    <span>
+                      {repeatDays.length === 0
+                        ? "Select days"
+                        : daysOfWeek
+                            .filter((day) => repeatDays.includes(day.id))
+                            .map((day) => day.name.substring(0, 3))
+                            .join(", ")}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform ${showRepeatOptions ? "rotate-180" : ""}`}
+                    />
+                  </button>
 
-                {showRepeatOptions && (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white p-2 shadow-lg">
-                    <div className="grid grid-cols-3 gap-2">
-                      {daysOfWeek.map((day) => (
-                        <div key={day.id} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`day-${day.id}`}
-                            checked={repeatDays.includes(day.id)}
-                            onChange={() => toggleDay(day.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <label
-                            htmlFor={`day-${day.id}`}
-                            className="ml-2 text-sm text-gray-700"
-                          >
-                            {day.name.substring(0, 3)}
-                          </label>
-                        </div>
-                      ))}
+                  {showRepeatOptions && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white p-2 shadow-lg">
+                      <div className="grid grid-cols-3 gap-2">
+                        {daysOfWeek.map((day) => (
+                          <div key={day.id} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id={`day-${day.id}`}
+                              checked={repeatDays.includes(day.id)}
+                              onChange={() => toggleDay(day.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <label
+                              htmlFor={`day-${day.id}`}
+                              className="ml-2 text-sm text-gray-700"
+                            >
+                              {day.name.substring(0, 3)}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+
+                <div className="mt-4">
+                  <label
+                    htmlFor="repeat-duration"
+                    className="mb-2 block text-sm font-medium"
+                  >
+                    Repeat for
+                  </label>
+                  <select
+                    id="repeat-duration"
+                    value={repeatDuration}
+                    onChange={(e) =>
+                      setRepeatDuration(
+                        e.target.value as
+                          | "week"
+                          | "2weeks"
+                          | "month"
+                          | "3months"
+                          | "6months",
+                      )
+                    }
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  >
+                    <option value="week">1 Week</option>
+                    <option value="2weeks">2 Weeks</option>
+                    <option value="month">1 Month</option>
+                    <option value="3months">3 Months</option>
+                    <option value="6months">6 Months</option>
+                  </select>
+                </div>
+              </>
             )}
           </div>
 
