@@ -12,9 +12,9 @@ import {
   XCircle,
   Globe2,
   Lock,
+  Loader2,
 } from "lucide-react";
 import dayjs from "dayjs";
-import { nanoid } from "nanoid";
 
 interface EventPopoverProps {
   selectedDate: dayjs.Dayjs;
@@ -45,6 +45,8 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     lastName: string;
     id: string;
   } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { events, setEvents } = useEventStore();
   const { categories = [] } = useCategoryStore();
@@ -115,34 +117,82 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!currentUser) {
-      console.error("No user data available");
+      setError("No user data available");
       return;
     }
 
-    const newEvent = {
-      id: nanoid(),
-      title,
-      description,
-      date: selectedDate
-        .set("hour", parseInt(startTime.split(":")[0]))
-        .set("minute", parseInt(startTime.split(":")[1])),
-      endTime: selectedDate
-        .set("hour", parseInt(endTime.split(":")[0]))
-        .set("minute", parseInt(endTime.split(":")[1])),
-      isRepeating,
-      repeatDays: isRepeating ? repeatDays : undefined,
-      repeatDuration: isRepeating ? repeatDuration : undefined,
-      guests,
-      isPublic,
-      categoryId: selectedCategoryId,
-      userId: currentUser.id,
-    };
+    if (!title.trim()) {
+      setError("Title is required");
+      return;
+    }
 
-    // Add to local state
-    setEvents([...events, newEvent]);
-    onClose();
+    try {
+      setIsSubmitting(true);
+
+      // Create start and end time by combining the selected date with the time
+      const startDateTime = selectedDate
+        .set("hour", parseInt(startTime.split(":")[0]))
+        .set("minute", parseInt(startTime.split(":")[1]))
+        .second(0)
+        .millisecond(0);
+
+      const endDateTime = selectedDate
+        .set("hour", parseInt(endTime.split(":")[0]))
+        .set("minute", parseInt(endTime.split(":")[1]))
+        .second(0)
+        .millisecond(0);
+
+      const eventData = {
+        title,
+        description,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        isRepeating,
+        repeatDays: isRepeating ? repeatDays : undefined,
+        guests,
+        isPublic,
+        categoryId: selectedCategoryId,
+      };
+
+      console.log("Sending event data:", eventData); // Debug log
+
+      const response = await fetch("/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(eventData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create event");
+      }
+
+      // Update local state with the new event
+      setEvents([
+        ...events,
+        {
+          ...data.event,
+          date: dayjs(data.event.startTime), // Convert startTime to dayjs
+          endTime: dayjs(data.event.endTime), // Convert endTime to dayjs
+        },
+      ]);
+
+      onClose();
+    } catch (error) {
+      console.error("Error creating event:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to create event",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleDay = (dayId: number) => {
@@ -178,6 +228,12 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
             <span className="font-medium">
               {currentUser.firstName} {currentUser.lastName}
             </span>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
+            {error}
           </div>
         )}
 
@@ -511,7 +567,16 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Create Event</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Event"
+              )}
+            </Button>
           </div>
         </form>
       </div>

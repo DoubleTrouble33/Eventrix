@@ -1,9 +1,10 @@
 "use client";
 
 import Header from "@/components/header/Header";
-import MainView from "@/components/Mainview";
+import MainView from "@/components/MainView";
 import { useEffect } from "react";
 import { useCategoryStore } from "@/lib/store";
+import { EventProvider } from "@/components/EventProvider";
 
 export default function DashboardPage() {
   const { categories, selectedCategory } = useCategoryStore();
@@ -23,9 +24,11 @@ export default function DashboardPage() {
   }, [categories, selectedCategory]);
 
   return (
-    <div className="">
-      <Header />
-      <MainView />
-    </div>
+    <EventProvider>
+      <div className="">
+        <Header />
+        <MainView />
+      </div>
+    </EventProvider>
   );
 }
