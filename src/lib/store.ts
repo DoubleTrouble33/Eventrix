@@ -3,31 +3,39 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { getMonth } from "./getTime";
 
+//Store in simple terms is a way to handle state in a next.js app using zustand,
+// very similar to useState/useContext in react.
+
+// Store for managing calendar view state (month, week, day)
 interface ViewStoreType {
   selectedView: string;
   setView: (value: string) => void;
 }
 
+// Store for managing date-related state and month view data
 interface DateStoreType {
   userSelectedDate: Dayjs;
   setDate: (value: Dayjs) => void;
-  twoDMonthArray: dayjs.Dayjs[][];
+  twoDMonthArray: dayjs.Dayjs[][]; // 2D array representing the month view
   selectedMonthIndex: number;
   setMonth: (index: number) => void;
 }
 
+// Type for calendar event guests
 export type GuestType = {
   id?: string;
   name: string;
   email: string;
 };
 
+// Type for event categories with color coding
 export type EventCategory = {
   id: string;
   name: string;
   color: string;
 };
 
+// Type for calendar events with all their properties
 export type CalendarEventType = {
   id: string;
   title: string;
@@ -35,13 +43,14 @@ export type CalendarEventType = {
   date: dayjs.Dayjs;
   endTime?: dayjs.Dayjs;
   isRepeating?: boolean;
-  repeatDays?: number[];
+  repeatDays?: number[]; // Array of days (0-6) when event repeats
   repeatDuration?: "week" | "2weeks" | "month" | "3months" | "6months";
   guests?: GuestType[];
   isPublic: boolean;
   categoryId: string;
 };
 
+// Store for managing events and event-related UI state
 type EventStore = {
   events: CalendarEventType[];
   isPopoverOpen: boolean;
@@ -54,18 +63,20 @@ type EventStore = {
   closeEventSummary: () => void;
 };
 
+// Store for managing sidebar visibility
 interface ToggleSideBarType {
   isSideBarOpen: boolean;
   setSideBarOpen: () => void;
 }
 
-// Default categories
+// Default categories that come pre-loaded with the app
 const defaultCategories: EventCategory[] = [
   { id: "personal", name: "Personal", color: "#3B82F6" }, // blue-500
   { id: "work", name: "Work", color: "#10B981" }, // emerald-500
   { id: "fitness", name: "Fitness", color: "#EF4444" }, // red-500
 ];
 
+// Store for managing event categories
 interface CategoryStoreType {
   initialized: boolean;
   categories: EventCategory[];
@@ -77,6 +88,7 @@ interface CategoryStoreType {
   initialize: () => void;
 }
 
+// Category store implementation with CRUD operations
 export const useCategoryStore = create<CategoryStoreType>()((set) => ({
   initialized: false,
   categories: defaultCategories,
@@ -104,6 +116,7 @@ export const useCategoryStore = create<CategoryStoreType>()((set) => ({
     }),
 }));
 
+// View store implementation with persistence
 export const useViewStore = create<ViewStoreType>()(
   devtools(
     persist(
@@ -118,11 +131,13 @@ export const useViewStore = create<ViewStoreType>()(
   ),
 );
 
+// Helper function to get events for a specific day, handling both one-time and recurring events
 export const getEventsForDay = (
   events: CalendarEventType[],
   date: dayjs.Dayjs,
 ) => {
   return events.filter((event) => {
+    // For non-repeating events, just check if the date matches
     if (!event.isRepeating) {
       return event.date.format("YYYY-MM-DD") === date.format("YYYY-MM-DD");
     }
@@ -169,6 +184,7 @@ export const getEventsForDay = (
   });
 };
 
+// Date store implementation with persistence
 export const useDateStore = create<DateStoreType>()(
   devtools(
     persist(
@@ -188,6 +204,7 @@ export const useDateStore = create<DateStoreType>()(
   ),
 );
 
+// Event store implementation
 export const useEventStore = create<EventStore>((set) => ({
   events: [],
   isPopoverOpen: false,
@@ -202,6 +219,7 @@ export const useEventStore = create<EventStore>((set) => ({
     set({ selectedEvent: null, isEventSummaryOpen: false }),
 }));
 
+// Sidebar toggle store implementation
 export const useToggleSideBarStore = create<ToggleSideBarType>()(
   (set, get) => ({
     isSideBarOpen: true,
