@@ -15,6 +15,12 @@ import {
   Loader2,
 } from "lucide-react";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// Initialize dayjs plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 interface EventPopoverProps {
   selectedDate: dayjs.Dayjs;
@@ -24,10 +30,8 @@ interface EventPopoverProps {
 export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [startTime, setStartTime] = useState(selectedDate.format("HH:mm"));
-  const [endTime, setEndTime] = useState(
-    selectedDate.add(1, "hour").format("HH:mm"),
-  );
+  const [startTime, setStartTime] = useState("00:00"); // Default to 12:00 AM
+  const [endTime, setEndTime] = useState("01:00"); // Default to 1:00 AM
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatDays, setRepeatDays] = useState<number[]>([]);
   const [showRepeatOptions, setShowRepeatOptions] = useState(false);
@@ -55,15 +59,28 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        console.log("Fetching user data..."); // Debug log
         const response = await fetch("/api/auth/user", {
           credentials: "include",
         });
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentUser(data.user);
+
+        const data = await response.json();
+        console.log("User API response:", data); // Debug log
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch user");
         }
+
+        if (!data.user) {
+          throw new Error("No user data in response");
+        }
+
+        setCurrentUser(data.user);
       } catch (error) {
         console.error("Error fetching user:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch user",
+        );
       }
     };
 
@@ -132,19 +149,24 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     try {
       setIsSubmitting(true);
 
+      // Parse hours and minutes
+      const [startHours, startMinutes] = startTime.split(":").map(Number);
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+
       // Create start and end time by combining the selected date with the time
       const startDateTime = selectedDate
-        .set("hour", parseInt(startTime.split(":")[0]))
-        .set("minute", parseInt(startTime.split(":")[1]))
+        .hour(startHours)
+        .minute(startMinutes)
         .second(0)
         .millisecond(0);
 
       const endDateTime = selectedDate
-        .set("hour", parseInt(endTime.split(":")[0]))
-        .set("minute", parseInt(endTime.split(":")[1]))
+        .hour(endHours)
+        .minute(endMinutes)
         .second(0)
         .millisecond(0);
 
+      // Convert to UTC before sending to the server
       const eventData = {
         title,
         description,
@@ -157,7 +179,11 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         categoryId: selectedCategoryId,
       };
 
-      console.log("Sending event data:", eventData); // Debug log
+      console.log("Sending event data:", {
+        ...eventData,
+        startTimeLocal: startDateTime.format("YYYY-MM-DD HH:mm:ss"),
+        endTimeLocal: endDateTime.format("YYYY-MM-DD HH:mm:ss"),
+      }); // Debug log
 
       const response = await fetch("/api/events", {
         method: "POST",
