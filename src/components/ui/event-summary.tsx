@@ -32,7 +32,7 @@ export function EventSummary() {
 
         <div className="space-y-4">
           <div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between pt-4">
               <h2 className="text-xl font-semibold text-gray-900">
                 {selectedEvent.title}
               </h2>

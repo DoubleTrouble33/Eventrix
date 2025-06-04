@@ -37,7 +37,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [guests, setGuests] = useState<GuestType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showGuestSearch, setShowGuestSearch] = useState(false);
-  const [isPublic, setIsPublic] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [selectedCategoryId, setSelectedCategoryId] =
     useState<string>("personal");
   const [currentUser, setCurrentUser] = useState<{
@@ -140,7 +140,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
       userId: currentUser.id,
     };
 
-    // TODO: Save to database
+    // Add to local state
     setEvents([...events, newEvent]);
     onClose();
   };
