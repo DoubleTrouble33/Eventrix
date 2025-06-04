@@ -9,9 +9,35 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useViewStore } from "@/lib/store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import { User, LogOut } from "lucide-react";
 
 export default function RightSide() {
   const { setView } = useViewStore();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        router.replace("/");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <div className="flex items-center space-x-4">
@@ -27,10 +53,31 @@ export default function RightSide() {
         </SelectContent>
       </Select>
 
-      <Avatar>
-        <AvatarImage src="/img/avatar-demo.png" />
-        <AvatarFallback>AV</AvatarFallback>
-      </Avatar>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="focus-visible:outline-none">
+          <Avatar className="cursor-pointer hover:opacity-80">
+            <AvatarImage src="/img/avatar-demo.png" />
+            <AvatarFallback>AV</AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onClick={() => router.push("/profile")}
+          >
+            <User className="mr-2 h-4 w-4" />
+            Profile
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="cursor-pointer text-red-600 focus:text-red-600"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

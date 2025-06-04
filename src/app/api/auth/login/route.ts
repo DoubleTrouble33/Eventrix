@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { users } from "@/db/schema";
+import { db } from "@/db/drizzle";
 import { compare } from "bcrypt";
 import { sign } from "jsonwebtoken";
+import { eq } from "drizzle-orm";
+import { users } from "@/db/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
 
     // Find user
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, email),
+      where: eq(users.email, email),
     });
 
     if (!user) {
@@ -51,7 +52,8 @@ export async function POST(req: Request) {
         user: {
           id: user.id,
           email: user.email,
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
         },
       },
       { status: 200 },
@@ -69,6 +71,11 @@ export async function POST(req: Request) {
     return response;
   } catch (error) {
     console.error("Login error:", error);
+    // Log detailed error for debugging
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
