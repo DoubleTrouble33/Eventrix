@@ -1,51 +1,39 @@
-import {
-  getEventsForDay,
-  useDateStore,
-  useEventStore,
-  useCategoryStore,
-} from "@/lib/store";
+import { getHours, isCurrentDay } from "@/lib/getTime";
+import { useDateStore, useEventStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
-import { getHours, isCurrentDay } from "@/lib/getTime";
 import { EventRenderer } from "./ui/event-renderer";
+import { CalendarEventType } from "@/lib/store";
 import { PlusCircle } from "lucide-react";
 import { EventPopover } from "./ui/event-popover";
-import { CalendarEventType } from "@/lib/store";
 
 export default function DayView() {
   const [currentTime, setCurrentTime] = useState(dayjs());
+  const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
+  const { userSelectedDate } = useDateStore();
   const [showEventPopover, setShowEventPopover] = useState(false);
-  const [selectedHour, setSelectedHour] = useState<number | null>(null);
-  const { events, setEvents, setSelectedEvent, setIsEventSummaryOpen } =
-    useEventStore();
-  const { userSelectedDate, setDate } = useDateStore();
-  const { selectedCategory } = useCategoryStore();
+  const [selectedHour, setSelectedHour] = useState<dayjs.Dayjs | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(dayjs());
-    }, 60000);
+    }, 60000); // Update every minute
     return () => clearInterval(interval);
   }, []);
 
   const isToday =
     userSelectedDate.format("DD-MM-YY") === dayjs().format("DD-MM-YY");
 
-  // Filter events by day and selected category
-  const dayEvents = getEventsForDay(events, userSelectedDate).filter(
-    (event) => !selectedCategory || event.categoryId === selectedCategory,
-  );
-
-  const handleAddEvent = (hour: number) => {
-    setSelectedHour(hour);
-    setShowEventPopover(true);
-  };
-
   const handleEventClick = (event: CalendarEventType) => {
     setSelectedEvent(event);
     setIsEventSummaryOpen(true);
+  };
+
+  const handleAddEvent = (hour: dayjs.Dayjs) => {
+    setSelectedHour(hour);
+    setShowEventPopover(true);
   };
 
   return (
@@ -68,60 +56,79 @@ export default function DayView() {
         <div></div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-4rem)]">
-        <div className="relative">
-          {getHours.map((hour, i) => {
-            const hourEvents = dayEvents.filter(
-              (event) => dayjs(event.startTime).hour() === hour.hour(),
-            );
-
-            return (
-              <div
-                key={i}
-                className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
-                onClick={() => handleAddEvent(hour.hour())}
-              >
-                {/* Centered Plus Button */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <button
-                    className="invisible rounded-full p-1 transition-all duration-200 ease-in-out group-hover:visible hover:scale-110"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddEvent(hour.hour());
-                    }}
-                  >
-                    <PlusCircle className="h-5 w-5 text-emerald-500 transition-colors hover:text-emerald-600" />
-                  </button>
+      <ScrollArea className="h-[70vh]">
+        <div className="grid grid-cols-[auto_1fr] p-4">
+          {/* Time Column */}
+          <div className="w-16 border-r border-gray-300">
+            {getHours.map((hour, index) => (
+              <div key={index} className="relative h-16">
+                <div className="absolute -top-2 text-xs text-gray-600">
+                  {hour.format("HH:mm")}
                 </div>
-
-                {/* Events */}
-                {hourEvents.map((event) => (
-                  <EventRenderer
-                    key={event.id}
-                    event={event}
-                    onClick={handleEventClick}
-                    onEdit={(event) => {
-                      // Implement edit functionality
-                      console.log("Edit event:", event);
-                    }}
-                    onDelete={(event) => {
-                      const updatedEvents = events.filter(
-                        (e) => e.id !== event.id,
-                      );
-                      setEvents(updatedEvents);
-                    }}
-                    variant="day"
-                  />
-                ))}
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Day/Boxes Column */}
+          <div className="relative border-r border-gray-300">
+            {getHours.map((hour, i) => {
+              const event = events.find((event) =>
+                dayjs(event.startTime).isSame(
+                  userSelectedDate.hour(hour.hour()),
+                  "hour",
+                ),
+              );
+
+              return (
+                <div
+                  key={i}
+                  className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
+                  onClick={() => {
+                    if (!event) {
+                      handleAddEvent(hour);
+                    }
+                  }}
+                >
+                  {/* Center Plus Button */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddEvent(hour);
+                      }}
+                      className="invisible rounded-full p-2 transition-all duration-200 ease-in-out group-hover:visible hover:scale-110"
+                    >
+                      <PlusCircle className="h-6 w-6 text-emerald-500 transition-colors hover:text-emerald-600" />
+                    </button>
+                  </div>
+
+                  {event && (
+                    <EventRenderer
+                      event={event}
+                      onClick={handleEventClick}
+                      variant="day"
+                    />
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Current time indicator */}
+            {isCurrentDay(userSelectedDate) && (
+              <div
+                className={cn("absolute h-0.5 w-full bg-red-500")}
+                style={{
+                  top: `${(currentTime.hour() / 24) * 100}%`,
+                }}
+              />
+            )}
+          </div>
         </div>
       </ScrollArea>
 
-      {showEventPopover && (
+      {showEventPopover && selectedHour && (
         <EventPopover
-          selectedDate={userSelectedDate.hour(selectedHour || 0)}
+          selectedDate={userSelectedDate.hour(selectedHour.hour())}
           onClose={() => {
             setShowEventPopover(false);
             setSelectedHour(null);

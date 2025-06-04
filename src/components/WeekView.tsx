@@ -1,47 +1,38 @@
-import { getHours, getWeekDays } from "@/lib/getTime";
-import {
-  getEventsForDay,
-  useDateStore,
-  useEventStore,
-  useCategoryStore,
-} from "@/lib/store";
+import { getHours, getWeekDays, isCurrentDay } from "@/lib/getTime";
+import { useDateStore, useEventStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
+import { EventRenderer } from "./ui/event-renderer";
+import { CalendarEventType } from "@/lib/store";
 import { PlusCircle } from "lucide-react";
 import { EventPopover } from "./ui/event-popover";
-import { EventRenderer } from "./ui/event-renderer";
 
 export default function WeekView() {
   const [currentTime, setCurrentTime] = useState(dayjs());
+  const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
   const { userSelectedDate } = useDateStore();
-  const { events, setEvents, setSelectedEvent, setIsEventSummaryOpen } =
-    useEventStore();
-  const { selectedCategory } = useCategoryStore();
   const [showEventPopover, setShowEventPopover] = useState(false);
+  const [selectedHour, setSelectedHour] = useState<dayjs.Dayjs | null>(null);
   const [selectedDay, setSelectedDay] = useState<dayjs.Dayjs | null>(null);
-  const [selectedHour, setSelectedHour] = useState<number | null>(null);
-
-  const days = getWeekDays(userSelectedDate);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(dayjs());
-    }, 60000);
-
+    }, 60000); // Update every minute
     return () => clearInterval(interval);
   }, []);
 
-  const handleAddEvent = (day: dayjs.Dayjs, hour: number) => {
-    setSelectedDay(day);
-    setSelectedHour(hour);
-    setShowEventPopover(true);
-  };
-
-  const handleEventClick = (event: any) => {
+  const handleEventClick = (event: CalendarEventType) => {
     setSelectedEvent(event);
     setIsEventSummaryOpen(true);
+  };
+
+  const handleAddEvent = (hour: dayjs.Dayjs, day: dayjs.Dayjs) => {
+    setSelectedHour(hour);
+    setSelectedDay(day);
+    setShowEventPopover(true);
   };
 
   return (
@@ -52,9 +43,10 @@ export default function WeekView() {
             <div className="absolute top-2 text-xs text-gray-600">GMT +2</div>
           </div>
         </div>
-        {/* Week view header  */}
-        {days.map(({ currentDate, today }, index) => (
-          <div className="flex flex-col items-center" key={index}>
+
+        {/* Week View Header */}
+        {getWeekDays(userSelectedDate).map(({ currentDate, today }, index) => (
+          <div key={index} className="flex flex-col items-center">
             <div className={cn("text-xs", today && "text-blue-600")}>
               {currentDate.format("ddd")}
             </div>
@@ -64,101 +56,91 @@ export default function WeekView() {
                 today && "bg-blue-600 text-white",
               )}
             >
-              {currentDate.format("DD")}{" "}
+              {currentDate.format("DD")}
             </div>
           </div>
         ))}
       </div>
 
-      <ScrollArea className="h-[calc(100vh-4rem)]">
-        <div className="grid grid-cols-7">
-          {days.map(({ currentDate, today }, index) => {
-            const dayDate = userSelectedDate.startOf("week").add(index, "day");
-            const dayEvents = getEventsForDay(events, dayDate).filter(
-              (event) =>
-                !selectedCategory || event.categoryId === selectedCategory,
-            );
-
-            return (
-              <div
-                key={index}
-                className={cn("relative border-r", today && "bg-blue-50")}
-              >
-                <div className="sticky top-0 z-10 border-b bg-white p-2">
-                  <div className="text-sm font-medium">
-                    {dayDate.format("ddd")}
-                  </div>
-                  <div
-                    className={cn(
-                      "text-lg",
-                      today && "rounded-full bg-blue-500 px-2 py-1 text-white",
-                    )}
-                  >
-                    {dayDate.date()}
-                  </div>
-                </div>
-
-                <div className="relative">
-                  {getHours.map((hour, i) => {
-                    const hourEvents = dayEvents.filter(
-                      (event) => dayjs(event.startTime).hour() === hour.hour(),
-                    );
-
-                    return (
-                      <div
-                        key={i}
-                        className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
-                        onClick={() => handleAddEvent(dayDate, hour.hour())}
-                      >
-                        {/* Centered Plus Button */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <button
-                            className="invisible rounded-full p-1 transition-all duration-200 ease-in-out group-hover:visible hover:scale-110"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddEvent(dayDate, hour.hour());
-                            }}
-                          >
-                            <PlusCircle className="h-5 w-5 text-emerald-500 transition-colors hover:text-emerald-600" />
-                          </button>
-                        </div>
-
-                        {/* Events */}
-                        {hourEvents.map((event) => (
-                          <EventRenderer
-                            key={event.id}
-                            event={event}
-                            onClick={handleEventClick}
-                            onEdit={(event) => {
-                              // Implement edit functionality
-                              console.log("Edit event:", event);
-                            }}
-                            onDelete={(event) => {
-                              const updatedEvents = events.filter(
-                                (e) => e.id !== event.id,
-                              );
-                              setEvents(updatedEvents);
-                            }}
-                            variant="week"
-                          />
-                        ))}
-                      </div>
-                    );
-                  })}
+      <ScrollArea className="h-[70vh]">
+        <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] p-4">
+          {/* Time Column */}
+          <div className="w-16 border-r border-gray-300">
+            {getHours.map((hour, index) => (
+              <div key={index} className="relative h-16">
+                <div className="absolute -top-2 text-xs text-gray-600">
+                  {hour.format("HH:mm")}
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Week/Boxes Columns */}
+          {getWeekDays(userSelectedDate).map(({ currentDate }, dayIndex) => (
+            <div key={dayIndex} className="relative border-r border-gray-300">
+              {getHours.map((hour, hourIndex) => {
+                const event = events.find((event) =>
+                  dayjs(event.startTime).isSame(
+                    currentDate.hour(hour.hour()),
+                    "hour",
+                  ),
+                );
+
+                return (
+                  <div
+                    key={hourIndex}
+                    className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
+                    onClick={() => {
+                      if (!event) {
+                        handleAddEvent(hour, currentDate);
+                      }
+                    }}
+                  >
+                    {/* Center Plus Button */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddEvent(hour, currentDate);
+                        }}
+                        className="invisible rounded-full p-2 transition-all duration-200 ease-in-out group-hover:visible hover:scale-110"
+                      >
+                        <PlusCircle className="h-6 w-6 text-emerald-500 transition-colors hover:text-emerald-600" />
+                      </button>
+                    </div>
+
+                    {event && (
+                      <EventRenderer
+                        event={event}
+                        onClick={handleEventClick}
+                        variant="week"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Current time indicator */}
+              {isCurrentDay(currentDate) && (
+                <div
+                  className={cn("absolute h-0.5 w-full bg-red-500")}
+                  style={{
+                    top: `${(currentTime.hour() / 24) * 100}%`,
+                  }}
+                />
+              )}
+            </div>
+          ))}
         </div>
       </ScrollArea>
 
-      {showEventPopover && selectedDay && (
+      {showEventPopover && selectedHour && selectedDay && (
         <EventPopover
-          selectedDate={selectedDay.hour(selectedHour || 0)}
+          selectedDate={selectedDay.hour(selectedHour.hour())}
           onClose={() => {
             setShowEventPopover(false);
-            setSelectedDay(null);
             setSelectedHour(null);
+            setSelectedDay(null);
           }}
         />
       )}
