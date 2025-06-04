@@ -217,28 +217,11 @@ export const getEventsForDay = (
     // and is within the repeat duration
     const eventDate = dayjs(event.startTime);
     const repeatDays = event.repeatDays || [];
-    const repeatDuration = event.repeatDuration || "month";
+    const endDate = event.repeatEndDate ? dayjs(event.repeatEndDate) : null;
 
-    // Calculate the end date based on repeat duration
-    let endDate;
-    switch (repeatDuration) {
-      case "week":
-        endDate = eventDate.add(1, "week").subtract(1, "day");
-        break;
-      case "2weeks":
-        endDate = eventDate.add(2, "week").subtract(1, "day");
-        break;
-      case "month":
-        endDate = eventDate.add(1, "month").subtract(1, "day");
-        break;
-      case "3months":
-        endDate = eventDate.add(3, "month").subtract(1, "day");
-        break;
-      case "6months":
-        endDate = eventDate.add(6, "month").subtract(1, "day");
-        break;
-      default:
-        endDate = eventDate.add(1, "month").subtract(1, "day");
+    // If no end date is set, don't show the event
+    if (!endDate) {
+      return false;
     }
 
     // Check if the current date is within the repeat duration
