@@ -1,7 +1,7 @@
 "use client";
 import { useViewStore } from "@/lib/store";
 import MonthView from "./MonthView";
-import SideBar from "./sidebar/SideBar";
+import { SideBar } from "./sidebar/SideBar";
 import WeekView from "./WeekView";
 import DayView from "./DayView";
 

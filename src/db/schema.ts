@@ -14,6 +14,26 @@ export const users = pgTable("users", {
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   password: text("password").notNull(), // Will be hashed
+  calendars: jsonb("calendars")
+    .$type<
+      {
+        id: string;
+        name: string;
+        color: string;
+        isDefault?: boolean;
+      }[]
+    >()
+    .default([
+      {
+        id: "public",
+        name: "Public Events",
+        color: "#4CAF50",
+        isDefault: true,
+      },
+      { id: "personal", name: "Personal", color: "#3B82F6" },
+      { id: "work", name: "Work", color: "#10B981" },
+      { id: "fitness", name: "Fitness", color: "#EF4444" },
+    ]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

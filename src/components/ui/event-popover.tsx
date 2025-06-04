@@ -1,30 +1,10 @@
+import { Button } from "@/components/ui/button";
+import { useEventStore, useCalendarStore } from "@/lib/store";
+import { Globe2, Lock, Loader2, Repeat, X, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useEventStore, GuestType, useCategoryStore } from "@/lib/store";
-import { ScrollArea } from "./scroll-area";
-import { Input } from "./input";
-import { Button } from "./button";
-import {
-  X,
-  Repeat,
-  ChevronDown,
-  UserPlus,
-  Search,
-  XCircle,
-  Globe2,
-  Lock,
-  Loader2,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-
-// Initialize dayjs plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-// Set the timezone to local
-const localTimezone = dayjs.tz.guess();
-dayjs.tz.setDefault(localTimezone);
 
 interface EventPopoverProps {
   selectedDate: dayjs.Dayjs;
@@ -42,12 +22,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [repeatDuration, setRepeatDuration] = useState<
     "week" | "2weeks" | "month" | "3months" | "6months"
   >("month");
-  const [guests, setGuests] = useState<GuestType[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showGuestSearch, setShowGuestSearch] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
-  const [selectedCategoryId, setSelectedCategoryId] =
-    useState<string>("personal");
+  const [selectedCalendarId, setSelectedCalendarId] =
+    useState<string>("public");
   const [currentUser, setCurrentUser] = useState<{
     firstName: string;
     lastName: string;
@@ -57,49 +34,26 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [error, setError] = useState<string | null>(null);
 
   const { events, setEvents } = useEventStore();
-  const { categories = [] } = useCategoryStore();
+  const { calendars } = useCalendarStore();
 
   // Fetch current user data
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        console.log("Fetching user data..."); // Debug log
         const response = await fetch("/api/auth/user", {
           credentials: "include",
         });
-
-        const data = await response.json();
-        console.log("User API response:", data); // Debug log
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch user");
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
         }
-
-        if (!data.user) {
-          throw new Error("No user data in response");
-        }
-
-        setCurrentUser(data.user);
       } catch (error) {
         console.error("Error fetching user:", error);
-        setError(
-          error instanceof Error ? error.message : "Failed to fetch user",
-        );
       }
     };
 
     fetchUser();
   }, []);
-
-  // Ensure we have a valid category ID
-  useEffect(() => {
-    if (
-      categories.length > 0 &&
-      !categories.find((c) => c.id === selectedCategoryId)
-    ) {
-      setSelectedCategoryId(categories[0].id);
-    }
-  }, [categories, selectedCategoryId]);
 
   const daysOfWeek = [
     { id: 0, name: "Sunday" },
@@ -111,34 +65,23 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     { id: 6, name: "Saturday" },
   ];
 
-  // Mock search results - this will be replaced with actual DB search later
-  const mockSearchResults = searchTerm
-    ? [
-        { id: "1", name: "John Doe", email: "john@example.com" },
-        { id: "2", name: "Jane Smith", email: "jane@example.com" },
-        { id: "3", name: "Bob Wilson", email: "bob@example.com" },
-      ].filter(
-        (user) =>
-          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    : [];
-
-  const addGuest = (guest: GuestType) => {
-    if (!guests.find((g) => g.email === guest.email)) {
-      setGuests([...guests, guest]);
-    }
-    setSearchTerm("");
-    setShowGuestSearch(false);
-  };
-
-  const removeGuest = (email: string) => {
-    setGuests(guests.filter((g) => g.email !== email));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Add validation logging
+    console.log("Form validation:", {
+      title: title.trim(),
+      description,
+      startTime,
+      endTime,
+      isRepeating,
+      repeatDays,
+      repeatDuration,
+      isPublic,
+      selectedCalendarId,
+      currentUser: !!currentUser,
+    });
 
     if (!currentUser) {
       setError("No user data available");
@@ -147,6 +90,21 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
     if (!title.trim()) {
       setError("Title is required");
+      return;
+    }
+
+    if (!selectedCalendarId) {
+      setError("Please select a calendar");
+      return;
+    }
+
+    if (!startTime || !endTime) {
+      setError("Start time and end time are required");
+      return;
+    }
+
+    if (isRepeating && repeatDays.length === 0) {
+      setError("Please select at least one day for repeating events");
       return;
     }
 
@@ -206,9 +164,8 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           isRepeating && repeatEndDate
             ? repeatEndDate.toISOString()
             : undefined,
-        guests,
         isPublic,
-        categoryId: selectedCategoryId,
+        calendarId: selectedCalendarId,
       };
 
       console.log("Sending event data:", {
@@ -241,11 +198,11 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         ...events,
         {
           ...data.event,
-          date: dayjs(data.event.startTime).tz(localTimezone), // Convert UTC to local time
-          endTime: dayjs(data.event.endTime).tz(localTimezone), // Convert UTC to local time
+          date: dayjs(data.event.startTime),
+          endTime: dayjs(data.event.endTime),
           repeatEndDate:
             isRepeating && data.event.repeatEndDate
-              ? dayjs(data.event.repeatEndDate).tz(localTimezone)
+              ? dayjs(data.event.repeatEndDate)
               : undefined,
         },
       ]);
@@ -319,38 +276,38 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="mb-2 block text-sm font-medium">Category</label>
+            <label className="mb-2 block text-sm font-medium">Calendar</label>
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+              {calendars.map((calendar) => (
                 <label
-                  key={category.id}
+                  key={calendar.id}
                   className={`flex cursor-pointer items-center gap-2 rounded-full px-3 py-1 text-sm transition-colors ${
-                    selectedCategoryId === category.id
+                    selectedCalendarId === calendar.id
                       ? "bg-gray-100"
                       : "hover:bg-gray-50"
                   }`}
                 >
                   <input
                     type="radio"
-                    name="category"
-                    value={category.id}
-                    checked={selectedCategoryId === category.id}
-                    onChange={() => setSelectedCategoryId(category.id)}
+                    name="calendar"
+                    value={calendar.id}
+                    checked={selectedCalendarId === calendar.id}
+                    onChange={() => setSelectedCalendarId(calendar.id)}
                     className="hidden"
                   />
                   <div className="flex items-center gap-2">
                     <div
                       className={`flex h-4 w-4 items-center justify-center rounded-full border-2`}
-                      style={{ borderColor: category.color }}
+                      style={{ borderColor: calendar.color }}
                     >
-                      {selectedCategoryId === category.id && (
+                      {selectedCalendarId === calendar.id && (
                         <div
                           className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: category.color }}
+                          style={{ backgroundColor: calendar.color }}
                         />
                       )}
                     </div>
-                    {category.name}
+                    {calendar.name}
                   </div>
                 </label>
               ))}
@@ -441,95 +398,6 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                 className="min-h-[8rem] w-full resize-none border-0 p-4 focus:outline-none"
               />
             </ScrollArea>
-          </div>
-
-          <div className="space-y-2">
-            <label className="mb-2 block text-sm font-medium">Guests</label>
-            <div className="relative">
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={() => setShowGuestSearch(!showGuestSearch)}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Add Guests
-                </Button>
-                {guests.length > 0 && (
-                  <span className="text-sm text-gray-500">
-                    {guests.length} guest{guests.length !== 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-
-              {showGuestSearch && (
-                <div className="absolute z-20 mt-1 w-full rounded-md border border-gray-300 bg-white p-2 shadow-lg">
-                  <div className="relative mb-2">
-                    <Search className="absolute top-2.5 left-2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search by name or email"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-
-                  <ScrollArea className="max-h-48">
-                    <div className="space-y-1">
-                      {mockSearchResults.map((result) => (
-                        <button
-                          key={result.id}
-                          type="button"
-                          onClick={() => addGuest(result)}
-                          className="flex w-full items-center justify-between rounded-md p-2 text-left hover:bg-gray-100"
-                        >
-                          <div>
-                            <div className="font-medium">{result.name}</div>
-                            <div className="text-sm text-gray-500">
-                              {result.email}
-                            </div>
-                          </div>
-                          <UserPlus className="h-4 w-4 text-gray-400" />
-                        </button>
-                      ))}
-                      {searchTerm && mockSearchResults.length === 0 && (
-                        <div className="p-2 text-sm text-gray-500">
-                          No results found
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
-            </div>
-
-            {guests.length > 0 && (
-              <ScrollArea className="mt-2 max-h-32 rounded-md border p-2">
-                <div className="space-y-1">
-                  {guests.map((guest) => (
-                    <div
-                      key={guest.email}
-                      className="flex items-center justify-between rounded-md bg-gray-50 p-2"
-                    >
-                      <div>
-                        <div className="font-medium">{guest.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {guest.email}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeGuest(guest.email)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <XCircle className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
           </div>
 
           <div className="space-y-2">

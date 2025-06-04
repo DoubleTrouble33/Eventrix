@@ -15,6 +15,13 @@
       "when": 1749063684262,
       "tag": "0001_loose_the_enforcers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749065814334,
+      "tag": "0002_glorious_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

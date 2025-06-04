@@ -37,14 +37,14 @@ export async function POST(request: Request) {
       isRepeating = false,
       repeatDays,
       repeatEndDate,
-      categoryId,
+      calendarId,
       guests = [],
     } = data;
 
     console.log("Received event data:", data); // Debug log
 
     // Validate required fields
-    if (!title || !startTime || !endTime || !categoryId) {
+    if (!title || !startTime || !endTime || !calendarId) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         isRepeating,
         repeatDays: repeatDays || null,
         repeatEndDate: repeatEndDateUTC ? new Date(repeatEndDateUTC) : null,
-        categoryId,
+        categoryId: calendarId,
       };
 
       const [event] = await db.insert(events).values(newEvent).returning();

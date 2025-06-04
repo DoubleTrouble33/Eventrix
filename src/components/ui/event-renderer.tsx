@@ -2,6 +2,7 @@ import { CalendarEventType } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
+import dayjs from "dayjs";
 
 interface EventRendererProps {
   event: CalendarEventType;
@@ -36,8 +37,8 @@ export function EventRenderer({
         <div className="flex items-center">
           {variant !== "month" && (
             <span className="mr-1 font-medium">
-              {event.date.format(timeFormat)}
-              {event.endTime && `-${event.endTime.format(timeFormat)}`}
+              {dayjs(event.startTime).format(timeFormat)}
+              {event.endTime && `-${dayjs(event.endTime).format(timeFormat)}`}
             </span>
           )}
           <span>{event.title}</span>

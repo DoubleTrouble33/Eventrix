@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { EventSummary } from "@/components/ui/event-summary";
 import { Toaster } from "sonner";
+import { CalendarProvider } from "@/components/CalendarProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,9 +30,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
-        <EventSummary />
-        <Toaster />
+        <CalendarProvider>
+          {children}
+          <EventSummary />
+          <Toaster />
+        </CalendarProvider>
       </body>
     </html>
   );

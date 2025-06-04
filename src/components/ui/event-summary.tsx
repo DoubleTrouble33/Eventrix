@@ -1,18 +1,19 @@
 "use client";
 
-import { useEventStore, useCategoryStore } from "@/lib/store";
+import { useEventStore, useCalendarStore } from "@/lib/store";
 import { ScrollArea } from "./scroll-area";
 import { Button } from "./button";
 import { X, Trash, Users, Globe2, Lock, Tag } from "lucide-react";
+import dayjs from "dayjs";
 
 export function EventSummary() {
   const { selectedEvent, closeEventSummary, events, setEvents } =
     useEventStore();
-  const { categories } = useCategoryStore();
+  const { calendars } = useCalendarStore();
 
   if (!selectedEvent) return null;
 
-  const category = categories.find((c) => c.id === selectedEvent.categoryId);
+  const calendar = calendars.find((c) => c.id === selectedEvent.categoryId);
 
   const handleDelete = async () => {
     try {
@@ -67,26 +68,26 @@ export function EventSummary() {
                 </div>
               </div>
             </div>
-            {category && (
+            {calendar && (
               <div className="mt-2 flex items-center gap-2">
                 <Tag className="h-4 w-4 text-gray-500" />
                 <div
                   className="flex items-center gap-2 rounded-full px-2 py-0.5 text-sm"
-                  style={{ backgroundColor: `${category.color}20` }}
+                  style={{ backgroundColor: `${calendar.color}20` }}
                 >
                   <div
                     className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: category.color }}
+                    style={{ backgroundColor: calendar.color }}
                   />
-                  <span style={{ color: category.color }}>{category.name}</span>
+                  <span style={{ color: calendar.color }}>{calendar.name}</span>
                 </div>
               </div>
             )}
             <p className="mt-2 text-sm text-gray-500">
-              {selectedEvent.date.format("MMMM D, YYYY")}
+              {dayjs(selectedEvent.startTime).format("MMMM D, YYYY")}
               <br />
-              {selectedEvent.date.format("h:mm A")} -{" "}
-              {selectedEvent.endTime?.format("h:mm A")}
+              {dayjs(selectedEvent.startTime).format("h:mm A")} -{" "}
+              {dayjs(selectedEvent.endTime).format("h:mm A")}
             </p>
           </div>
 

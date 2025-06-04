@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { EventPopover } from "./ui/event-popover";
 import { EventRenderer } from "./ui/event-renderer";
 import { PlusCircle } from "lucide-react";
+import { CalendarEventType } from "@/lib/store";
 
 export default function MonthViewBox({
   day,
@@ -14,7 +15,7 @@ export default function MonthViewBox({
   rowIndex: number;
 }) {
   const [showEventPopover, setShowEventPopover] = useState(false);
-  const { events, openEventSummary } = useEventStore();
+  const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
   const { selectedCategory } = useCategoryStore();
 
   if (!day) {
@@ -30,6 +31,11 @@ export default function MonthViewBox({
   const dayEvents = getEventsForDay(events, day).filter(
     (event) => !selectedCategory || event.categoryId === selectedCategory,
   );
+
+  const handleEventClick = (event: CalendarEventType) => {
+    setSelectedEvent(event);
+    setIsEventSummaryOpen(true);
+  };
 
   return (
     <div
@@ -72,7 +78,7 @@ export default function MonthViewBox({
           <EventRenderer
             key={event.id}
             event={event}
-            onClick={openEventSummary}
+            onClick={handleEventClick}
           />
         ))}
       </div>
