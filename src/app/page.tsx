@@ -4,13 +4,68 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowRight, Calendar as CalendarIcon } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar as CalendarIcon,
+  User,
+  LogOut,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState, useEffect } from "react";
 
 export default function LandingPage() {
   const router = useRouter();
   const today = new Date();
+  const [user, setUser] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null>(null);
+
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/user", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setUser(null);
+        router.replace("/");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   // Function to style weekends
   const isDayWeekend = (date: Date) => {
@@ -36,15 +91,54 @@ export default function LandingPage() {
             />
           </div>
           <div className="hidden space-x-4 lg:flex lg:flex-1 lg:justify-end">
-            <Button variant="ghost" onClick={() => router.push("/login")}>
-              Log in <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => router.push("/register")}
-              className="bg-gray-900 text-white hover:bg-gray-800"
-            >
-              Sign Up
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-medium text-gray-700">
+                  {user.firstName} {user.lastName}
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="focus-visible:outline-none">
+                    <Avatar className="cursor-pointer hover:opacity-80">
+                      <AvatarImage src="/img/avatar-demo.png" />
+                      <AvatarFallback>
+                        {user
+                          ? `${user.firstName[0]}${user.lastName[0]}`
+                          : "AV"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => user && router.push(`/user/${user.id}`)}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => router.push("/login")}>
+                  Log in <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={() => router.push("/register")}
+                  className="bg-gray-900 text-white hover:bg-gray-800"
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
         </nav>
       </div>
@@ -143,9 +237,11 @@ export default function LandingPage() {
                   <Button
                     size="lg"
                     className="bg-indigo-600 text-white hover:bg-indigo-500"
-                    onClick={() => router.push("/register")}
+                    onClick={() =>
+                      router.push(user ? "/dashboard" : "/register")
+                    }
                   >
-                    Get Started
+                    {user ? "Go to Dashboard" : "Get Started"}
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </div>

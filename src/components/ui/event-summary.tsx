@@ -14,10 +14,25 @@ export function EventSummary() {
 
   const category = categories.find((c) => c.id === selectedEvent.categoryId);
 
-  const handleDelete = () => {
-    const updatedEvents = events.filter((e) => e.id !== selectedEvent.id);
-    setEvents(updatedEvents);
-    closeEventSummary();
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/events?id=${selectedEvent.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
+
+      // Update local state
+      const updatedEvents = events.filter((e) => e.id !== selectedEvent.id);
+      setEvents(updatedEvents);
+      closeEventSummary();
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   return (

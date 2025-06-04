@@ -22,6 +22,10 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+// Set the timezone to local
+const localTimezone = dayjs.tz.guess();
+dayjs.tz.setDefault(localTimezone);
+
 interface EventPopoverProps {
   selectedDate: dayjs.Dayjs;
   onClose: () => void;
@@ -166,6 +170,30 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         .second(0)
         .millisecond(0);
 
+      // Calculate the end date based on repeat duration
+      let repeatEndDate: dayjs.Dayjs | undefined;
+      if (isRepeating) {
+        switch (repeatDuration) {
+          case "week":
+            repeatEndDate = startDateTime.add(1, "week").subtract(1, "day");
+            break;
+          case "2weeks":
+            repeatEndDate = startDateTime.add(2, "week").subtract(1, "day");
+            break;
+          case "month":
+            repeatEndDate = startDateTime.add(1, "month").subtract(1, "day");
+            break;
+          case "3months":
+            repeatEndDate = startDateTime.add(3, "month").subtract(1, "day");
+            break;
+          case "6months":
+            repeatEndDate = startDateTime.add(6, "month").subtract(1, "day");
+            break;
+          default:
+            repeatEndDate = startDateTime.add(1, "month").subtract(1, "day");
+        }
+      }
+
       // Convert to UTC before sending to the server
       const eventData = {
         title,
@@ -174,6 +202,10 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         endTime: endDateTime.toISOString(),
         isRepeating,
         repeatDays: isRepeating ? repeatDays : undefined,
+        repeatEndDate:
+          isRepeating && repeatEndDate
+            ? repeatEndDate.toISOString()
+            : undefined,
         guests,
         isPublic,
         categoryId: selectedCategoryId,
@@ -183,6 +215,10 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         ...eventData,
         startTimeLocal: startDateTime.format("YYYY-MM-DD HH:mm:ss"),
         endTimeLocal: endDateTime.format("YYYY-MM-DD HH:mm:ss"),
+        repeatEndDateLocal:
+          isRepeating && repeatEndDate
+            ? repeatEndDate.format("YYYY-MM-DD")
+            : undefined,
       }); // Debug log
 
       const response = await fetch("/api/events", {
@@ -205,8 +241,12 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         ...events,
         {
           ...data.event,
-          date: dayjs(data.event.startTime), // Convert startTime to dayjs
-          endTime: dayjs(data.event.endTime), // Convert endTime to dayjs
+          date: dayjs(data.event.startTime).tz(localTimezone), // Convert UTC to local time
+          endTime: dayjs(data.event.endTime).tz(localTimezone), // Convert UTC to local time
+          repeatEndDate:
+            isRepeating && data.event.repeatEndDate
+              ? dayjs(data.event.repeatEndDate).tz(localTimezone)
+              : undefined,
         },
       ]);
 

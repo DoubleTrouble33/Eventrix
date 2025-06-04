@@ -45,6 +45,7 @@ export type CalendarEventType = {
   isRepeating?: boolean;
   repeatDays?: number[]; // Array of days (0-6) when event repeats
   repeatDuration?: "week" | "2weeks" | "month" | "3months" | "6months";
+  repeatEndDate?: dayjs.Dayjs; // End date for repeating events
   guests?: GuestType[];
   isPublic: boolean;
   categoryId: string;

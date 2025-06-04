@@ -7,5 +7,7 @@ if (!DATABASE_URL) {
 }
 
 export const sql = postgres(DATABASE_URL, {
-  ssl: process.env.NODE_ENV === "production",
+  ssl: {
+    rejectUnauthorized: false, // This is needed for some hosting providers
+  },
 });

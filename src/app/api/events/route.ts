@@ -3,6 +3,21 @@ import { db } from "@/db/drizzle";
 import { events, eventGuests } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import type { InferModel } from "drizzle-orm";
+
+// Initialize dayjs plugins
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+// Set the timezone to local
+const localTimezone = dayjs.tz.guess();
+dayjs.tz.setDefault(localTimezone);
+
+// Define the type for event insertion
+type NewEvent = InferModel<typeof events, "insert">;
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +36,7 @@ export async function POST(request: Request) {
       isPublic = false,
       isRepeating = false,
       repeatDays,
+      repeatEndDate,
       categoryId,
       guests = [],
     } = data;
@@ -36,21 +52,31 @@ export async function POST(request: Request) {
     }
 
     try {
-      // Create the event
-      const [event] = await db
-        .insert(events)
-        .values({
-          title,
-          description: description || "",
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          userId: session.user.id,
-          isPublic,
-          isRepeating,
-          repeatDays: repeatDays || null,
-          categoryId,
-        })
-        .returning();
+      // Convert dates to UTC for storage
+      const startTimeUTC = dayjs(startTime)
+        .tz(localTimezone)
+        .utc()
+        .toISOString();
+      const endTimeUTC = dayjs(endTime).tz(localTimezone).utc().toISOString();
+      const repeatEndDateUTC = repeatEndDate
+        ? dayjs(repeatEndDate).tz(localTimezone).utc().toISOString()
+        : null;
+
+      // Create the event with proper typing
+      const newEvent: NewEvent = {
+        title,
+        description: description || "",
+        startTime: new Date(startTimeUTC),
+        endTime: new Date(endTimeUTC),
+        userId: session.user.id,
+        isPublic,
+        isRepeating,
+        repeatDays: repeatDays || null,
+        repeatEndDate: repeatEndDateUTC ? new Date(repeatEndDateUTC) : null,
+        categoryId,
+      };
+
+      const [event] = await db.insert(events).values(newEvent).returning();
 
       console.log("Created event:", event); // Debug log
 
@@ -111,36 +137,91 @@ export async function GET() {
     // Get authenticated user
     const session = await auth();
     if (!session || !session.user?.id) {
+      console.log("No authenticated session found");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get all events for the user
-    const userEvents = await db
-      .select()
-      .from(events)
-      .where(eq(events.userId, session.user.id));
+    console.log("Fetching events for user:", session.user.id);
 
-    // Get guests for all events
-    const eventIds = userEvents.map((event) => event.id);
-    const guests =
-      eventIds.length > 0
-        ? await db
-            .select()
-            .from(eventGuests)
-            .where(eq(eventGuests.eventId, eventIds[0])) // TODO: Use in operator for multiple events
-        : [];
+    try {
+      const userEvents = await db
+        .select()
+        .from(events)
+        .where(eq(events.userId, session.user.id));
 
-    // Combine events with their guests
-    const eventsWithGuests = userEvents.map((event) => ({
-      ...event,
-      guests: guests.filter((guest) => guest.eventId === event.id),
-    }));
+      console.log("Found events:", userEvents);
 
-    return NextResponse.json({ events: eventsWithGuests });
+      // Get guests for all events
+      const eventIds = userEvents.map((event) => event.id);
+      const guests =
+        eventIds.length > 0
+          ? await db
+              .select()
+              .from(eventGuests)
+              .where(eq(eventGuests.eventId, eventIds[0]))
+          : [];
+
+      console.log("Found guests:", guests);
+
+      // Convert dates to UTC for storage
+      const eventsWithUTC = userEvents.map((event) => ({
+        ...event,
+        startTime: dayjs(event.startTime).tz(localTimezone).utc().toISOString(),
+        endTime: dayjs(event.endTime).tz(localTimezone).utc().toISOString(),
+        repeatEndDate: event.repeatEndDate
+          ? dayjs(event.repeatEndDate).tz(localTimezone).utc().toISOString()
+          : null,
+        guests: guests.filter((guest) => guest.eventId === event.id),
+      }));
+
+      console.log("Returning events with UTC dates:", eventsWithUTC);
+
+      return NextResponse.json({ events: eventsWithUTC });
+    } catch (dbError) {
+      console.error("Database error:", dbError);
+      return NextResponse.json(
+        { error: "Database error while fetching events" },
+        { status: 500 },
+      );
+    }
   } catch (error) {
-    console.error("Error fetching events:", error);
+    console.error("Error in GET /api/events:", error);
     return NextResponse.json(
       { error: "Failed to fetch events" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    // Get authenticated user
+    const session = await auth();
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get("id");
+
+    if (!eventId) {
+      return NextResponse.json(
+        { error: "Event ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // First delete event guests
+    await db.delete(eventGuests).where(eq(eventGuests.eventId, eventId));
+
+    // Then delete the event
+    await db.delete(events).where(eq(events.id, eventId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    return NextResponse.json(
+      { error: "Failed to delete event" },
       { status: 500 },
     );
   }
