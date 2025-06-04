@@ -40,9 +40,33 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const [isPublic, setIsPublic] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] =
     useState<string>("personal");
+  const [currentUser, setCurrentUser] = useState<{
+    firstName: string;
+    lastName: string;
+    id: string;
+  } | null>(null);
 
   const { events, setEvents } = useEventStore();
   const { categories = [] } = useCategoryStore();
+
+  // Fetch current user data
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/user", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   // Ensure we have a valid category ID
   useEffect(() => {
@@ -89,8 +113,14 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     setGuests(guests.filter((g) => g.email !== email));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!currentUser) {
+      console.error("No user data available");
+      return;
+    }
+
     const newEvent = {
       id: nanoid(),
       title,
@@ -107,8 +137,10 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
       guests,
       isPublic,
       categoryId: selectedCategoryId,
+      userId: currentUser.id,
     };
 
+    // TODO: Save to database
     setEvents([...events, newEvent]);
     onClose();
   };
@@ -134,6 +166,20 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         <h2 className="mb-4 text-lg font-semibold">
           Create Event: {selectedDate.format("MMMM D, YYYY")}
         </h2>
+
+        {currentUser && (
+          <div className="mb-6 flex items-center gap-2 border-b pb-4 text-sm text-gray-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+              <span className="font-medium text-blue-700">
+                {currentUser.firstName[0]}
+                {currentUser.lastName[0]}
+              </span>
+            </div>
+            <span className="font-medium">
+              {currentUser.firstName} {currentUser.lastName}
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

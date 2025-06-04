@@ -7,13 +7,12 @@ import Link from "next/link";
 import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from "react-icons/md";
 import { useDateStore, useToggleSideBarStore, useViewStore } from "@/lib/store";
 import dayjs from "dayjs";
+
 export default function LeftSide() {
   const todaysDate = dayjs();
   const { userSelectedDate, setDate, setMonth, selectedMonthIndex } =
     useDateStore();
-
   const { setSideBarOpen } = useToggleSideBarStore();
-
   const { selectedView } = useViewStore();
 
   const handleTodayClick = () => {
