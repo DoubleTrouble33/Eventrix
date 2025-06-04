@@ -1,7 +1,7 @@
 "use client";
 
 import Header from "@/components/header/Header";
-import MainView from "@/components/MainView";
+import MainView from "@/components/Mainview";
 import { useEffect } from "react";
 import { useCategoryStore } from "@/lib/store";
 import { EventProvider } from "@/components/EventProvider";

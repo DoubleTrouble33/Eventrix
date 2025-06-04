@@ -31,6 +31,7 @@ export const events = pgTable("events", {
   isPublic: boolean("is_public").default(false).notNull(),
   isRepeating: boolean("is_repeating").default(false).notNull(),
   repeatDays: jsonb("repeat_days").$type<number[]>(),
+  repeatEndDate: timestamp("repeat_end_date"),
   categoryId: text("category_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

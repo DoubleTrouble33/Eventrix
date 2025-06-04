@@ -1,5 +1,16 @@
 import { sql } from "@/lib/db";
 import { notFound } from "next/navigation";
+import UserProfileClient from "./UserProfileClient";
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatar: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface PageProps {
   params: {
@@ -7,14 +18,30 @@ interface PageProps {
   };
 }
 
-async function getUser(userId: string) {
+async function getUser(userId: string): Promise<User | null> {
   const result = await sql`
-    SELECT id, email, "firstName", "lastName"
+    SELECT 
+      id, 
+      email, 
+      first_name as "firstName", 
+      last_name as "lastName",
+      created_at as "createdAt",
+      updated_at as "updatedAt"
     FROM users
     WHERE id = ${userId}
   `;
 
-  return result[0] || null;
+  if (!result[0]) return null;
+
+  return {
+    id: result[0].id,
+    email: result[0].email,
+    firstName: result[0].firstName,
+    lastName: result[0].lastName,
+    createdAt: result[0].createdAt,
+    updatedAt: result[0].updatedAt,
+    avatar: "/img/avatar-demo.png", // Set default avatar here
+  };
 }
 
 export default async function UserProfilePage({ params }: PageProps) {
@@ -24,30 +51,5 @@ export default async function UserProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  return (
-    <div className="container mx-auto py-8">
-      <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-md">
-        <h1 className="mb-6 text-2xl font-bold">User Profile</h1>
-
-        <div className="space-y-4">
-          <div className="flex items-center">
-            <span className="w-32 font-semibold">Name:</span>
-            <span>
-              {user.firstName} {user.lastName}
-            </span>
-          </div>
-
-          <div className="flex items-center">
-            <span className="w-32 font-semibold">Email:</span>
-            <span>{user.email}</span>
-          </div>
-
-          <div className="flex items-center">
-            <span className="w-32 font-semibold">User ID:</span>
-            <span className="font-mono text-sm">{user.id}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <UserProfileClient user={user} />;
 }
