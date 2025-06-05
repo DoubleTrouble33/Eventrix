@@ -67,13 +67,6 @@ export default function UserProfileClient({
   const [invitations, setInvitations] = useState(initialInvitations);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
 
-  const handleEventClick = (date: Date) => {
-    // Format the date as YYYY-MM for the URL
-    const monthParam = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    // Navigate to dashboard with the specific month
-    router.push(`/dashboard?month=${monthParam}`);
-  };
-
   const handleAddToCalendar = async (event: Event) => {
     try {
       setIsAddingEvent(event.id);
