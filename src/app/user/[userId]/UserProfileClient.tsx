@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -25,6 +24,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EventDetails } from "@/components/ui/event-details";
+import { AvatarUpload } from "@/components/ui/avatar-upload";
 
 interface User {
   id: string;
@@ -61,7 +61,7 @@ export default function UserProfileClient({
 }: UserProfileClientProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUser, setEditedUser] = useState(user);
+  const [userData, setUserData] = useState(user);
   const [isAddingEvent, setIsAddingEvent] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [invitations, setInvitations] = useState(initialInvitations);
@@ -134,9 +134,9 @@ export default function UserProfileClient({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          firstName: editedUser.firstName,
-          lastName: editedUser.lastName,
-          email: editedUser.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
         }),
       });
 
@@ -145,7 +145,7 @@ export default function UserProfileClient({
       }
 
       const updatedUser = await response.json();
-      setEditedUser(updatedUser);
+      setUserData(updatedUser);
       setIsEditing(false);
       window.location.reload(); // Force a full page refresh to get the new data
     } catch (error) {
@@ -167,6 +167,10 @@ export default function UserProfileClient({
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+
+  const handleAvatarChange = (newAvatarUrl: string) => {
+    setUserData((prev) => ({ ...prev, avatar: newAvatarUrl }));
   };
 
   return (
@@ -212,40 +216,22 @@ export default function UserProfileClient({
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex flex-col items-center">
-                <div className="relative">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage
-                      src={user.avatar}
-                      alt={`${user.firstName} ${user.lastName}`}
-                    />
-                    <AvatarFallback>
-                      {user.firstName[0]}
-                      {user.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="absolute right-0 bottom-0 h-8 w-8 rounded-full"
-                    onClick={() => {
-                      /* TODO: Implement avatar change */
-                    }}
-                  >
-                    <User className="h-4 w-4" />
-                  </Button>
-                </div>
+                <AvatarUpload
+                  currentAvatar={userData.avatar}
+                  onAvatarChange={handleAvatarChange}
+                />
                 <CardTitle className="mt-4">
-                  {user.firstName} {user.lastName}
+                  {userData.firstName} {userData.lastName}
                 </CardTitle>
-                <CardDescription>{user.email}</CardDescription>
+                <CardDescription>{userData.email}</CardDescription>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {user.createdAt && (
+                {userData.createdAt && (
                   <p>
                     Created:{" "}
-                    {new Date(user.createdAt).toLocaleDateString("en-GB", {
+                    {new Date(userData.createdAt).toLocaleDateString("en-GB", {
                       year: "numeric",
                       month: "2-digit",
                       day: "2-digit",
@@ -253,10 +239,10 @@ export default function UserProfileClient({
                     })}
                   </p>
                 )}
-                {user.updatedAt && (
+                {userData.updatedAt && (
                   <p>
                     Last updated:{" "}
-                    {new Date(user.updatedAt).toLocaleDateString("en-GB", {
+                    {new Date(userData.updatedAt).toLocaleDateString("en-GB", {
                       year: "numeric",
                       month: "2-digit",
                       day: "2-digit",
@@ -291,10 +277,10 @@ export default function UserProfileClient({
                     <div className="space-y-2">
                       <label className="text-sm font-medium">First Name</label>
                       <Input
-                        value={editedUser.firstName}
+                        value={userData.firstName}
                         onChange={(e) =>
-                          setEditedUser({
-                            ...editedUser,
+                          setUserData({
+                            ...userData,
                             firstName: e.target.value,
                           })
                         }
@@ -304,10 +290,10 @@ export default function UserProfileClient({
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Last Name</label>
                       <Input
-                        value={editedUser.lastName}
+                        value={userData.lastName}
                         onChange={(e) =>
-                          setEditedUser({
-                            ...editedUser,
+                          setUserData({
+                            ...userData,
                             lastName: e.target.value,
                           })
                         }
@@ -319,9 +305,9 @@ export default function UserProfileClient({
                     <label className="text-sm font-medium">Email</label>
                     <Input
                       type="email"
-                      value={editedUser.email}
+                      value={userData.email}
                       onChange={(e) =>
-                        setEditedUser({ ...editedUser, email: e.target.value })
+                        setUserData({ ...userData, email: e.target.value })
                       }
                       disabled={!isEditing}
                     />

@@ -18,10 +18,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // If trying to access home page while authenticated
-  if (isAuthenticated && isPublicPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // Remove the redirection for authenticated users on home page
+  // if (isAuthenticated && isPublicPage) {
+  //   return NextResponse.redirect(new URL("/dashboard", request.url));
+  // }
 
   return NextResponse.next();
 }

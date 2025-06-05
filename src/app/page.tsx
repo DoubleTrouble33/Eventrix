@@ -29,6 +29,7 @@ export default function LandingPage() {
     id: string;
     firstName: string;
     lastName: string;
+    avatar: string;
   } | null>(null);
 
   // Fetch user data when component mounts
@@ -98,8 +99,19 @@ export default function LandingPage() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="focus-visible:outline-none">
-                    <Avatar className="cursor-pointer hover:opacity-80">
-                      <AvatarImage src="/img/avatar-demo.png" />
+                    <Avatar className="h-12 w-12 cursor-pointer hover:opacity-80">
+                      <AvatarImage
+                        src={user?.avatar || "/img/avatar-demo.png"}
+                        alt={
+                          user
+                            ? `${user.firstName} ${user.lastName}`
+                            : "User Avatar"
+                        }
+                        className="object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/img/avatar-demo.png";
+                        }}
+                      />
                       <AvatarFallback>
                         {user
                           ? `${user.firstName[0]}${user.lastName[0]}`

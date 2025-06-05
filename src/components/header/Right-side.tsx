@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useViewStore } from "@/lib/store";
 import {
   DropdownMenu,
@@ -35,6 +35,7 @@ export default function RightSide() {
     id: string;
     firstName: string;
     lastName: string;
+    avatar: string;
   } | null>(null);
   const [unviewedCount, setUnviewedCount] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -208,8 +209,16 @@ export default function RightSide() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-8 w-8">
+          <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+            <Avatar className="h-12 w-12">
+              <AvatarImage
+                src={user?.avatar || "/img/avatar-demo.png"}
+                alt={`${user?.firstName} ${user?.lastName}`}
+                className="object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/img/avatar-demo.png";
+                }}
+              />
               <AvatarFallback>
                 {user?.firstName?.[0]}
                 {user?.lastName?.[0]}

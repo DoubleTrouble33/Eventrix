@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
 import { events, users, eventGuests } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import UserProfileClient from "./UserProfileClient";
 
@@ -20,16 +20,18 @@ interface Event {
   description: string | null;
   startTime: Date;
   endTime: Date;
+  userId: string;
   isPublic: boolean;
+  isRepeating: boolean;
+  repeatDays: number[] | null;
+  repeatEndDate: Date | null;
   categoryId: string;
-  hostName?: string;
-  hostId?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface PageProps {
-  params: {
-    userId: string;
-  };
+  params: Promise<{ userId: string }>;
 }
 
 async function getUser(userId: string): Promise<User | null> {
@@ -39,6 +41,7 @@ async function getUser(userId: string): Promise<User | null> {
       email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
+      avatar: users.avatar,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
@@ -49,26 +52,12 @@ async function getUser(userId: string): Promise<User | null> {
 
   return {
     ...result[0],
-    avatar: "/img/avatar-demo.png", // Default avatar
+    avatar: result[0].avatar || "/img/avatar-demo.png", // Use default avatar if null
   };
 }
 
 async function getUserEvents(userId: string): Promise<Event[]> {
-  const result = await db
-    .select({
-      id: events.id,
-      title: events.title,
-      description: events.description,
-      startTime: events.startTime,
-      endTime: events.endTime,
-      isPublic: events.isPublic,
-      categoryId: events.categoryId,
-    })
-    .from(events)
-    .where(eq(events.userId, userId))
-    .orderBy(events.startTime);
-
-  return result;
+  return await db.select().from(events).where(eq(events.userId, userId));
 }
 
 async function getEventInvitations(userId: string): Promise<Event[]> {
@@ -83,65 +72,36 @@ async function getEventInvitations(userId: string): Promise<Event[]> {
 
   if (!user[0]) return [];
 
-  // Get events where the user is invited as a guest and hasn't accepted yet
-  const invitedEvents = await db
+  // Get events where the user is invited as a guest
+  const result = await db
     .select({
-      id: events.id,
-      title: events.title,
-      description: events.description,
-      startTime: events.startTime,
-      endTime: events.endTime,
-      isPublic: events.isPublic,
-      categoryId: events.categoryId,
-      hostId: events.userId,
+      event: events,
     })
-    .from(events)
-    .innerJoin(eventGuests, eq(events.id, eventGuests.eventId))
-    .where(
-      and(
-        eq(eventGuests.email, user[0].email),
-        eq(eventGuests.isAccepted, false),
-      ),
-    )
-    .orderBy(events.startTime);
+    .from(eventGuests)
+    .innerJoin(events, eq(eventGuests.eventId, events.id))
+    .where(eq(eventGuests.email, user[0].email));
 
-  // Get host names for each event
-  const eventsWithHosts = await Promise.all(
-    invitedEvents.map(async (event) => {
-      const host = await db
-        .select({
-          firstName: users.firstName,
-          lastName: users.lastName,
-        })
-        .from(users)
-        .where(eq(users.id, event.hostId))
-        .limit(1);
-
-      return {
-        ...event,
-        hostName: host[0]
-          ? `${host[0].firstName} ${host[0].lastName}`
-          : "Unknown Host",
-      };
-    }),
-  );
-
-  return eventsWithHosts;
+  return result.map((r) => r.event);
 }
 
 export default async function UserProfilePage({ params }: PageProps) {
-  const user = await getUser(params.userId);
+  const { userId } = await params;
+  const user = await getUser(userId);
 
   if (!user) {
     notFound();
   }
 
-  const [events, invitations] = await Promise.all([
-    getUserEvents(params.userId),
-    getEventInvitations(params.userId),
+  const [userEvents, invitations] = await Promise.all([
+    getUserEvents(userId),
+    getEventInvitations(userId),
   ]);
 
   return (
-    <UserProfileClient user={user} events={events} invitations={invitations} />
+    <UserProfileClient
+      user={user}
+      events={userEvents}
+      invitations={invitations}
+    />
   );
 }

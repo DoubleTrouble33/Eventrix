@@ -50,6 +50,7 @@ export async function auth() {
         email: users.email,
         firstName: users.firstName,
         lastName: users.lastName,
+        avatar: users.avatar,
       })
       .from(users)
       .where(eq(users.id, decoded.userId));
@@ -65,6 +66,7 @@ export async function auth() {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        avatar: user.avatar,
       },
     };
   } catch (error) {
