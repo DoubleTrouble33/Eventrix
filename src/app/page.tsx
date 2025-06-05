@@ -171,13 +171,13 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Calendar and Preview Section */}
+        {/* Calendar and Preview Section - Modified */}
         <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Left Side - Calendar */}
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-full max-w-sm rounded-xl bg-white p-4 shadow-lg ring-1 ring-gray-200">
-                <div className="mb-3 flex items-center gap-3 border-b pb-3">
+            <div className="flex items-center justify-center">
+              <div className="w-full rounded-xl bg-white p-6 shadow-lg ring-1 ring-gray-200">
+                <div className="mb-4 flex items-center gap-3 border-b pb-3">
                   <CalendarIcon className="h-5 w-5 text-indigo-600" />
                   <h3 className="text-sm font-medium text-gray-900">
                     Calendar Preview
@@ -222,16 +222,21 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Side - Preview */}
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-full rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-6">
-                <div className="flex aspect-video items-center justify-center rounded-lg bg-white/80 shadow-lg">
-                  <div className="text-center">
-                    <CalendarIcon className="mx-auto mb-3 h-12 w-12 text-indigo-600" />
-                    <p className="text-lg text-gray-600">
-                      Dashboard Preview Coming Soon
-                    </p>
-                  </div>
+            {/* Right Side - Preview (Enlarged) */}
+            <div className="flex flex-col">
+              <div className="h-full w-full rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-6">
+                <div className="h-full w-full overflow-hidden rounded-lg shadow-lg">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full object-contain"
+                  >
+                    <source src="/intro-demo.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
                 <div className="mt-6 flex justify-center">
                   <Button
