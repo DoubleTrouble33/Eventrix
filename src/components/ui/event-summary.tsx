@@ -53,7 +53,9 @@ export function EventSummary() {
                 {selectedEvent.title}
               </h2>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1">
+                <div
+                  className={`flex items-center gap-1 rounded-full ${selectedEvent.isPublic ? "bg-gray-100" : "bg-blue-50"} px-3 py-1`}
+                >
                   {selectedEvent.isPublic ? (
                     <>
                       <Globe2 className="h-4 w-4 text-green-500" />
@@ -61,8 +63,8 @@ export function EventSummary() {
                     </>
                   ) : (
                     <>
-                      <Lock className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">Private</span>
+                      <Lock className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm text-blue-600">Private</span>
                     </>
                   )}
                 </div>
@@ -100,12 +102,18 @@ export function EventSummary() {
           {selectedEvent.guests && selectedEvent.guests.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <h3 className="text-sm font-medium">
+                <Users
+                  className={`h-4 w-4 ${selectedEvent.isPublic ? "text-gray-500" : "text-blue-500"}`}
+                />
+                <h3
+                  className={`text-sm font-medium ${selectedEvent.isPublic ? "text-gray-700" : "text-blue-700"}`}
+                >
                   Guests ({selectedEvent.guests.length})
                 </h3>
               </div>
-              <ScrollArea className="h-32 w-full rounded-md border bg-gray-50 p-2">
+              <ScrollArea
+                className={`h-32 w-full rounded-md border ${selectedEvent.isPublic ? "bg-gray-50" : "bg-blue-50"} p-2`}
+              >
                 <div className="space-y-2">
                   {selectedEvent.guests.map((guest) => (
                     <div
@@ -113,7 +121,11 @@ export function EventSummary() {
                       className="rounded-md bg-white p-2 shadow-sm"
                     >
                       <div className="font-medium">{guest.name}</div>
-                      <div className="text-sm text-gray-500">{guest.email}</div>
+                      <div
+                        className={`text-sm ${selectedEvent.isPublic ? "text-gray-500" : "text-blue-500"}`}
+                      >
+                        {guest.email}
+                      </div>
                     </div>
                   ))}
                 </div>

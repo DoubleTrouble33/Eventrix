@@ -1,10 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { useEventStore, useCalendarStore } from "@/lib/store";
-import { Globe2, Lock, Loader2, Repeat, X, ChevronDown } from "lucide-react";
+import {
+  Globe2,
+  Lock,
+  Loader2,
+  Repeat,
+  X,
+  ChevronDown,
+  Search,
+  Plus,
+  UserPlus,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
+import { useDebounce } from "@/lib/hooks";
 
 interface EventPopoverProps {
   selectedDate: dayjs.Dayjs;
@@ -32,6 +43,23 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    Array<{
+      id: string;
+      email: string;
+      name: string;
+    }>
+  >([]);
+  const [selectedGuests, setSelectedGuests] = useState<
+    Array<{
+      id: string;
+      email: string;
+      name: string;
+    }>
+  >([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { events, setEvents } = useEventStore();
   const { calendars } = useCalendarStore();
@@ -54,6 +82,42 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
     fetchUser();
   }, []);
+
+  // Search users effect
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!debouncedSearch) {
+        setSearchResults([]);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const response = await fetch(
+          `/api/users/search?q=${encodeURIComponent(debouncedSearch)}`,
+          {
+            credentials: "include",
+          },
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // Filter out already selected guests
+          setSearchResults(
+            data.users.filter(
+              (user: { id: string }) =>
+                !selectedGuests.some((guest) => guest.id === user.id),
+            ),
+          );
+        }
+      } catch (error) {
+        console.error("Error searching users:", error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    searchUsers();
+  }, [debouncedSearch, selectedGuests]);
 
   const daysOfWeek = [
     { id: 0, name: "Sunday" },
@@ -81,6 +145,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
       isPublic,
       selectedCalendarId,
       currentUser: !!currentUser,
+      selectedGuests,
     });
 
     if (!currentUser) {
@@ -166,6 +231,10 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
             : undefined,
         isPublic,
         calendarId: selectedCalendarId,
+        guests: selectedGuests.map((guest) => ({
+          name: guest.name,
+          email: guest.email,
+        })),
       };
 
       console.log("Sending event data:", {
@@ -494,6 +563,96 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                   </select>
                 </div>
               </>
+            )}
+          </div>
+
+          {/* Guest Invitation Section */}
+          <div className="space-y-2">
+            <label className="mb-2 block text-sm font-medium">
+              Invite Guests
+            </label>
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name or email"
+                  className="pl-9"
+                />
+              </div>
+              {searchQuery &&
+                (isSearching ? (
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                    Searching...
+                  </div>
+                ) : (
+                  searchResults.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                      <ScrollArea className="max-h-48">
+                        {searchResults.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedGuests([...selectedGuests, user]);
+                              setSearchQuery("");
+                            }}
+                            className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-gray-50"
+                          >
+                            <Plus className="h-4 w-4" />
+                            <div>
+                              <div className="font-medium">{user.name}</div>
+                              <div className="text-sm text-gray-500">
+                                {user.email}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </ScrollArea>
+                    </div>
+                  )
+                ))}
+            </div>
+
+            {selectedGuests.length > 0 && (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium">
+                    Selected Guests ({selectedGuests.length})
+                  </span>
+                </div>
+                <ScrollArea className="h-32 rounded-md border bg-gray-50 p-2">
+                  <div className="space-y-2">
+                    {selectedGuests.map((guest) => (
+                      <div
+                        key={guest.id}
+                        className="flex items-center justify-between rounded-md bg-white p-2 shadow-sm"
+                      >
+                        <div>
+                          <div className="font-medium">{guest.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {guest.email}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedGuests(
+                              selectedGuests.filter((g) => g.id !== guest.id),
+                            )
+                          }
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             )}
           </div>
 

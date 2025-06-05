@@ -22,13 +22,17 @@ export function EventRenderer({
   const [showOptions, setShowOptions] = useState(false);
   const timeFormat = variant === "month" ? "HH:mm" : "h:mm A";
 
+  const eventColorClasses = event.isPublic
+    ? "bg-green-100 text-green-700 hover:bg-green-200"
+    : "bg-blue-100 text-blue-700 hover:bg-blue-200";
+
   return (
     <div className="relative">
       <button
         onClick={() => onClick?.(event)}
         className={cn(
           "group w-full truncate rounded px-1 text-left text-xs",
-          "bg-orange-100 text-orange-700 hover:bg-orange-200",
+          eventColorClasses,
           variant === "month" && "py-0",
           variant === "week" && "py-1",
           variant === "day" && "py-2",
@@ -44,7 +48,11 @@ export function EventRenderer({
           <span>{event.title}</span>
         </div>
         {event.isRepeating && variant !== "month" && (
-          <div className="text-[0.6rem] text-orange-500">(Repeating)</div>
+          <div
+            className={`text-[0.6rem] ${event.isPublic ? "text-green-500" : "text-blue-500"}`}
+          >
+            (Repeating)
+          </div>
         )}
       </button>
 
