@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
+import { db } from "@/db/drizzle";
 import { eq, and } from "drizzle-orm";
 import { eventGuests } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -11,7 +11,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session || session.user.id !== params.userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get count of unread invitations
@@ -29,6 +29,9 @@ export async function GET(
     return NextResponse.json({ count: result.length });
   } catch (error) {
     console.error("Error getting invitation count:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
