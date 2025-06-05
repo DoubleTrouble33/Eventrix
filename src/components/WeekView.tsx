@@ -1,5 +1,5 @@
 import { getHours, getWeekDays, isCurrentDay } from "@/lib/getTime";
-import { useDateStore, useEventStore } from "@/lib/store";
+import { useDateStore, useEventStore, getEventsForDay } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
@@ -79,11 +79,11 @@ export default function WeekView() {
           {getWeekDays(userSelectedDate).map(({ currentDate }, dayIndex) => (
             <div key={dayIndex} className="relative border-r border-gray-300">
               {getHours.map((hour, hourIndex) => {
-                const event = events.find((event) =>
-                  dayjs(event.startTime).isSame(
-                    currentDate.hour(hour.hour()),
-                    "hour",
-                  ),
+                const dayEvents = getEventsForDay(events, currentDate).filter(
+                  (event) => {
+                    const eventHour = dayjs(event.startTime).hour();
+                    return eventHour === hour.hour();
+                  },
                 );
 
                 return (
@@ -91,7 +91,7 @@ export default function WeekView() {
                     key={hourIndex}
                     className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
                     onClick={() => {
-                      if (!event) {
+                      if (dayEvents.length === 0) {
                         handleAddEvent(hour, currentDate);
                       }
                     }}
@@ -109,13 +109,14 @@ export default function WeekView() {
                       </button>
                     </div>
 
-                    {event && (
+                    {dayEvents.map((event) => (
                       <EventRenderer
+                        key={event.id}
                         event={event}
                         onClick={handleEventClick}
                         variant="week"
                       />
-                    )}
+                    ))}
                   </div>
                 );
               })}

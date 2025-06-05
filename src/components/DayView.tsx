@@ -1,5 +1,5 @@
 import { getHours, isCurrentDay } from "@/lib/getTime";
-import { useDateStore, useEventStore } from "@/lib/store";
+import { useDateStore, useEventStore, getEventsForDay } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
@@ -38,22 +38,27 @@ export default function DayView() {
 
   return (
     <>
-      <div className="grid grid-cols-[auto_auto_1fr] px-4">
-        <div className="w-16 border-r border-gray-300 text-xs">GMT +2</div>
-        <div className="flex w-16 flex-col items-center">
+      <div className="grid grid-cols-[auto_1fr] place-items-center px-4 py-2">
+        <div className="w-16 border-r border-gray-300">
+          <div className="relative h-16">
+            <div className="absolute top-2 text-xs text-gray-600">GMT +2</div>
+          </div>
+        </div>
+
+        {/* Day View Header */}
+        <div className="flex flex-col items-center">
           <div className={cn("text-xs", isToday && "text-blue-600")}>
-            {userSelectedDate.format("ddd")}{" "}
-          </div>{" "}
+            {userSelectedDate.format("ddd")}
+          </div>
           <div
             className={cn(
               "h-12 w-12 rounded-full p-2 text-2xl",
               isToday && "bg-blue-600 text-white",
             )}
           >
-            {userSelectedDate.format("DD")}{" "}
+            {userSelectedDate.format("DD")}
           </div>
         </div>
-        <div></div>
       </div>
 
       <ScrollArea className="h-[70vh]">
@@ -69,22 +74,22 @@ export default function DayView() {
             ))}
           </div>
 
-          {/* Day/Boxes Column */}
           <div className="relative border-r border-gray-300">
             {getHours.map((hour, i) => {
-              const event = events.find((event) =>
-                dayjs(event.startTime).isSame(
-                  userSelectedDate.hour(hour.hour()),
-                  "hour",
-                ),
-              );
+              const dayEvents = getEventsForDay(
+                events,
+                userSelectedDate,
+              ).filter((event) => {
+                const eventHour = dayjs(event.startTime).hour();
+                return eventHour === hour.hour();
+              });
 
               return (
                 <div
                   key={i}
                   className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
                   onClick={() => {
-                    if (!event) {
+                    if (dayEvents.length === 0) {
                       handleAddEvent(hour);
                     }
                   }}
@@ -102,13 +107,14 @@ export default function DayView() {
                     </button>
                   </div>
 
-                  {event && (
+                  {dayEvents.map((event) => (
                     <EventRenderer
+                      key={event.id}
                       event={event}
                       onClick={handleEventClick}
                       variant="day"
                     />
-                  )}
+                  ))}
                 </div>
               );
             })}
