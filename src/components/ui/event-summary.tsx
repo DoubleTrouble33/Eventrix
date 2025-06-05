@@ -86,10 +86,22 @@ export function EventSummary() {
               </div>
             )}
             <p className="mt-2 text-sm text-gray-500">
-              {dayjs(selectedEvent.startTime).format("MMMM D, YYYY")}
-              <br />
-              {dayjs(selectedEvent.startTime).format("h:mm A")} -{" "}
-              {dayjs(selectedEvent.endTime).format("h:mm A")}
+              {selectedEvent.isRepeating ? (
+                <>
+                  {dayjs(selectedEvent.startTime).format("MMMM D")} -{" "}
+                  {dayjs(selectedEvent.repeatEndDate).format("MMMM D, YYYY")}
+                  <br />
+                  {dayjs(selectedEvent.startTime).format("h:mm A")} -{" "}
+                  {dayjs(selectedEvent.endTime).format("h:mm A")}
+                </>
+              ) : (
+                <>
+                  {dayjs(selectedEvent.startTime).format("MMMM D, YYYY")}
+                  <br />
+                  {dayjs(selectedEvent.startTime).format("h:mm A")} -{" "}
+                  {dayjs(selectedEvent.endTime).format("h:mm A")}
+                </>
+              )}
             </p>
           </div>
 

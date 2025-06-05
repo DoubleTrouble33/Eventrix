@@ -1,4 +1,4 @@
-import { X, Globe2, Lock, Clock, Tag } from "lucide-react";
+import { X, Globe2, Lock, Clock, Tag, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
@@ -14,6 +14,8 @@ interface EventDetailsProps {
     categoryId: string;
     hostName?: string;
     hostId?: string;
+    isRepeating?: boolean;
+    repeatEndDate?: Date;
   };
   onClose: () => void;
 }
@@ -46,14 +48,30 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
           <div className="space-y-4">
             {/* Date & Time */}
             <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
-              <Clock className="mt-0.5 h-5 w-5 text-gray-500" />
+              {event.isRepeating ? (
+                <Repeat className="mt-0.5 h-5 w-5 text-gray-500" />
+              ) : (
+                <Clock className="mt-0.5 h-5 w-5 text-gray-500" />
+              )}
               <div>
                 <h3 className="font-medium text-gray-900">Date & Time</h3>
                 <p className="text-sm text-gray-600">
-                  {dayjs(event.startTime).format("MMMM D, YYYY")}
-                  <br />
-                  {dayjs(event.startTime).format("h:mm A")} -{" "}
-                  {dayjs(event.endTime).format("h:mm A")}
+                  {event.isRepeating ? (
+                    <>
+                      {dayjs(event.startTime).format("MMMM D")} -{" "}
+                      {dayjs(event.repeatEndDate).format("MMMM D, YYYY")}
+                      <br />
+                      {dayjs(event.startTime).format("h:mm A")} -{" "}
+                      {dayjs(event.endTime).format("h:mm A")}
+                    </>
+                  ) : (
+                    <>
+                      {dayjs(event.startTime).format("MMMM D, YYYY")}
+                      <br />
+                      {dayjs(event.startTime).format("h:mm A")} -{" "}
+                      {dayjs(event.endTime).format("h:mm A")}
+                    </>
+                  )}
                 </p>
               </div>
             </div>

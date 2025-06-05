@@ -196,25 +196,37 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
       // Calculate the end date based on repeat duration
       let repeatEndDate: dayjs.Dayjs | undefined;
       if (isRepeating) {
+        // First calculate the base end date based on duration
+        let baseEndDate: dayjs.Dayjs;
         switch (repeatDuration) {
           case "week":
-            repeatEndDate = startDateTime.add(1, "week").subtract(1, "day");
+            baseEndDate = startDateTime.add(1, "week").subtract(1, "day");
             break;
           case "2weeks":
-            repeatEndDate = startDateTime.add(2, "week").subtract(1, "day");
+            baseEndDate = startDateTime.add(2, "week").subtract(1, "day");
             break;
           case "month":
-            repeatEndDate = startDateTime.add(1, "month").subtract(1, "day");
+            baseEndDate = startDateTime.add(1, "month").subtract(1, "day");
             break;
           case "3months":
-            repeatEndDate = startDateTime.add(3, "month").subtract(1, "day");
+            baseEndDate = startDateTime.add(3, "month").subtract(1, "day");
             break;
           case "6months":
-            repeatEndDate = startDateTime.add(6, "month").subtract(1, "day");
+            baseEndDate = startDateTime.add(6, "month").subtract(1, "day");
             break;
           default:
-            repeatEndDate = startDateTime.add(1, "month").subtract(1, "day");
+            baseEndDate = startDateTime.add(1, "month").subtract(1, "day");
         }
+
+        // Find the last occurrence of the event based on selected days
+        let currentDate = baseEndDate;
+        while (
+          !repeatDays.includes(currentDate.day()) &&
+          currentDate.isAfter(startDateTime)
+        ) {
+          currentDate = currentDate.subtract(1, "day");
+        }
+        repeatEndDate = currentDate;
       }
 
       // Convert to UTC before sending to the server
