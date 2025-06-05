@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { events, eventGuests } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -18,6 +18,7 @@ dayjs.tz.setDefault(localTimezone);
 
 // Define the type for event insertion
 type NewEvent = InferModel<typeof events, "insert">;
+type EventGuest = InferModel<typeof eventGuests, "select">;
 
 export async function POST(request: Request) {
   try {
@@ -144,6 +145,7 @@ export async function GET() {
     console.log("Fetching events for user:", session.user.id);
 
     try {
+      // Get all events for the user
       const userEvents = await db
         .select()
         .from(events)
@@ -153,17 +155,23 @@ export async function GET() {
 
       // Get guests for all events
       const eventIds = userEvents.map((event) => event.id);
-      const guests =
-        eventIds.length > 0
-          ? await db
-              .select()
-              .from(eventGuests)
-              .where(eq(eventGuests.eventId, eventIds[0]))
-          : [];
+      let guests: EventGuest[] = [];
 
-      console.log("Found guests:", guests);
+      if (eventIds.length > 0) {
+        try {
+          guests = await db
+            .select()
+            .from(eventGuests)
+            .where(inArray(eventGuests.eventId, eventIds));
+          console.log("Successfully fetched guests:", guests);
+        } catch (guestError) {
+          console.error("Error fetching guests:", guestError);
+          // Continue without guests rather than failing completely
+          guests = [];
+        }
+      }
 
-      // Convert dates to UTC for storage
+      // Convert dates to UTC and attach guests to their respective events
       const eventsWithUTC = userEvents.map((event) => ({
         ...event,
         startTime: dayjs(event.startTime).tz(localTimezone).utc().toISOString(),
@@ -178,7 +186,7 @@ export async function GET() {
 
       return NextResponse.json({ events: eventsWithUTC });
     } catch (dbError) {
-      console.error("Database error:", dbError);
+      console.error("Database error details:", dbError);
       return NextResponse.json(
         { error: "Database error while fetching events" },
         { status: 500 },
