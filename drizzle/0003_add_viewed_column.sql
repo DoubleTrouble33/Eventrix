@@ -1,0 +1,1 @@
+ALTER TABLE "event_guests" ADD COLUMN "viewed" boolean DEFAULT false NOT NULL; 

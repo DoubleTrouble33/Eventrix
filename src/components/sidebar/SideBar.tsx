@@ -20,7 +20,7 @@ export function SideBar() {
   return (
     <div
       className={`flex h-full flex-col border-r bg-white transition-all duration-300 ${
-        isSideBarOpen ? "w-64" : "w-0"
+        isSideBarOpen ? "w-64" : "w-0 overflow-hidden"
       }`}
     >
       <div className="flex h-full">

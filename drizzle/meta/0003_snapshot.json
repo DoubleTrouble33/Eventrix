@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "id": "493b62f1-6805-45fe-a6dc-6478d5683e6e",
+=======
+  "id": "0003_snapshot",
+>>>>>>> 250bb156fbdffdacfe45f028046a440a4fb3a176
   "prevId": "f382d631-af04-49c1-98c5-9390e03db533",
   "version": "7",
   "dialect": "postgresql",
@@ -40,6 +44,7 @@
           "notNull": true,
           "default": false
         },
+<<<<<<< HEAD
         "is_accepted": {
           "name": "is_accepted",
           "type": "boolean",
@@ -47,6 +52,8 @@
           "notNull": true,
           "default": false
         },
+=======
+>>>>>>> 250bb156fbdffdacfe45f028046a440a4fb3a176
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -76,6 +83,7 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+<<<<<<< HEAD
     },
     "public.events": {
       "name": "events",
@@ -273,3 +281,8 @@
     "tables": {}
   }
 }
+=======
+    }
+  }
+} 
+>>>>>>> 250bb156fbdffdacfe45f028046a440a4fb3a176
