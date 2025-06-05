@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
+import { db } from "@/db/drizzle";
 import { eq, and } from "drizzle-orm";
 import { eventGuests, users, events } from "@/db/schema";
 import { auth } from "@/lib/auth";
@@ -11,15 +11,22 @@ export async function GET(
   try {
     const session = await auth();
     if (!session || session.user.id !== params.userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get preview of unread invitations with host information
+    // Get preview of unread and unaccepted invitations with host information
     const result = await db
       .select({
         id: eventGuests.id,
+        eventId: events.id,
         eventTitle: events.title,
         hostName: users.firstName,
+        startTime: events.startTime,
+        endTime: events.endTime,
+        description: events.description,
+        isRepeating: events.isRepeating,
+        repeatDays: events.repeatDays,
+        repeatEndDate: events.repeatEndDate,
       })
       .from(eventGuests)
       .innerJoin(events, eq(events.id, eventGuests.eventId))
@@ -27,7 +34,7 @@ export async function GET(
       .where(
         and(
           eq(eventGuests.email, session.user.email), // Match guest's email
-          eq(eventGuests.viewed, false), // Only unread invitations
+          eq(eventGuests.isAccepted, false), // Only unaccepted invitations
         ),
       )
       .limit(5) // Only get the 5 most recent invitations
@@ -36,7 +43,10 @@ export async function GET(
     return NextResponse.json({ invitations: result });
   } catch (error) {
     console.error("Error getting invitation previews:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -48,7 +58,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session || session.user.id !== params.userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Mark all unread invitations as viewed
@@ -63,9 +73,12 @@ export async function POST(
       )
       .execute();
 
-    return new NextResponse("Success", { status: 200 });
+    return NextResponse.json({ message: "Invitations marked as viewed" });
   } catch (error) {
     console.error("Error marking invitations as viewed:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }

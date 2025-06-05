@@ -26,14 +26,6 @@ interface Event {
   hostId?: string;
 }
 
-interface EventInvitation {
-  id: string;
-  eventId: string;
-  event: Event;
-  status: "pending" | "accepted" | "declined";
-  createdAt: Date;
-}
-
 interface PageProps {
   params: {
     userId: string;
@@ -91,7 +83,7 @@ async function getEventInvitations(userId: string): Promise<Event[]> {
 
   if (!user[0]) return [];
 
-  // Get events where the user is invited as a guest
+  // Get events where the user is invited as a guest and hasn't accepted yet
   const invitedEvents = await db
     .select({
       id: events.id,
@@ -105,7 +97,12 @@ async function getEventInvitations(userId: string): Promise<Event[]> {
     })
     .from(events)
     .innerJoin(eventGuests, eq(events.id, eventGuests.eventId))
-    .where(eq(eventGuests.email, user[0].email))
+    .where(
+      and(
+        eq(eventGuests.email, user[0].email),
+        eq(eventGuests.isAccepted, false),
+      ),
+    )
     .orderBy(events.startTime);
 
   // Get host names for each event

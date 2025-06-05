@@ -25,6 +25,7 @@ interface Invitation {
   id: string;
   eventTitle: string;
   hostName: string;
+  viewed: boolean;
 }
 
 export default function RightSide() {
@@ -35,7 +36,7 @@ export default function RightSide() {
     firstName: string;
     lastName: string;
   } | null>(null);
-  const [invitationCount, setInvitationCount] = useState(0);
+  const [unviewedCount, setUnviewedCount] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   // Fetch user data when component mounts
@@ -63,15 +64,15 @@ export default function RightSide() {
       if (!user) return;
 
       try {
-        // Fetch count
+        // Fetch count of unviewed invitations
         const countResponse = await fetch(
-          `/api/users/${user.id}/invitations/count`,
+          `/api/users/${user.id}/invitations/count?viewed=false`,
           {
             credentials: "include",
           },
         );
         const countData = await countResponse.json();
-        setInvitationCount(countData.count);
+        setUnviewedCount(countData.count);
 
         // Fetch preview of invitations
         const previewResponse = await fetch(
@@ -118,25 +119,23 @@ export default function RightSide() {
     if (!user) return;
 
     try {
-      await fetch(`/api/users/${user.id}/invitations/preview`, {
+      // Mark all unviewed invitations as viewed
+      await fetch(`/api/users/${user.id}/invitations/mark-viewed`, {
         method: "POST",
         credentials: "include",
       });
 
-      // Refetch invitations and count after marking as viewed
-      const [countResponse, previewResponse] = await Promise.all([
-        fetch(`/api/users/${user.id}/invitations/count`, {
-          credentials: "include",
-        }),
-        fetch(`/api/users/${user.id}/invitations/preview`, {
-          credentials: "include",
-        }),
-      ]);
+      // Update the unviewed count to 0 since we just viewed them all
+      setUnviewedCount(0);
 
-      const countData = await countResponse.json();
+      // Refetch invitations preview to get updated data
+      const previewResponse = await fetch(
+        `/api/users/${user.id}/invitations/preview`,
+        {
+          credentials: "include",
+        },
+      );
       const previewData = await previewResponse.json();
-
-      setInvitationCount(countData.count);
       setInvitations(previewData.invitations);
     } catch (error) {
       console.error("Error marking invitations as viewed:", error);
@@ -165,9 +164,9 @@ export default function RightSide() {
             onClick={(e) => e.preventDefault()}
           >
             <Bell className="h-5 w-5" />
-            {invitationCount > 0 && (
+            {unviewedCount > 0 && (
               <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                {invitationCount}
+                {unviewedCount}
               </span>
             )}
           </Button>
@@ -200,8 +199,8 @@ export default function RightSide() {
               </DropdownMenuItem>
             </>
           ) : (
-            <div className="text-muted-foreground p-4 text-center text-sm">
-              No new invitations
+            <div className="p-4 text-center text-sm text-gray-500">
+              No new notifications
             </div>
           )}
         </DropdownMenuContent>
@@ -222,11 +221,6 @@ export default function RightSide() {
           <DropdownMenuItem onClick={() => goToProfile()}>
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
-            {invitationCount > 0 && (
-              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                {invitationCount}
-              </span>
-            )}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>

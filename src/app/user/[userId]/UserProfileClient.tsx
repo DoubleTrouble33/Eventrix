@@ -72,8 +72,27 @@ export default function UserProfileClient({
       setIsAddingEvent(event.id);
       setAddSuccess(null);
 
+      // Mark the invitation as accepted
+      const acceptResponse = await fetch(
+        `/api/users/${user.id}/invitations/accept`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            eventId: event.id,
+          }),
+          credentials: "include",
+        },
+      );
+
+      if (!acceptResponse.ok) {
+        throw new Error("Failed to accept invitation");
+      }
+
       // Add the event to the user's calendar
-      const response = await fetch("/api/events/copy", {
+      const copyResponse = await fetch("/api/events/copy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,9 +101,10 @@ export default function UserProfileClient({
           eventId: event.id,
           categoryId: event.categoryId,
         }),
+        credentials: "include",
       });
 
-      if (!response.ok) {
+      if (!copyResponse.ok) {
         throw new Error("Failed to add event to calendar");
       }
 
@@ -94,9 +114,10 @@ export default function UserProfileClient({
       // Show success message
       setAddSuccess(event.id);
 
-      // Clear success message after 2 seconds
+      // Clear success message after 2 seconds and refresh the page
       setTimeout(() => {
         setAddSuccess(null);
+        router.refresh(); // This will trigger a server-side rerender
       }, 2000);
     } catch (error) {
       console.error("Error adding event to calendar:", error);
