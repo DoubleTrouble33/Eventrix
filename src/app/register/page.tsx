@@ -33,6 +33,7 @@ export default function RegisterPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -41,14 +42,16 @@ export default function RegisterPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        router.push("/auth/login");
+        router.replace("/dashboard");
+        router.refresh();
       } else {
-        const data = await response.json();
         setError(data.message || "Registration failed");
       }
     } catch (err) {
-      setError(`An error occurred during registration : ${err}`);
+      setError(`An error occurred during registration: ${err}`);
     }
   };
 
@@ -207,7 +210,7 @@ export default function RegisterPage() {
           </form>
           <div className="text-center">
             <Link
-              href="/auth/login"
+              href="/login"
               className="text-indigo-600 hover:text-indigo-500"
             >
               Already have an account? Login

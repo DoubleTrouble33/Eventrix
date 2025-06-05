@@ -3,6 +3,9 @@ import { hash } from "bcrypt";
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { sign } from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function POST(req: Request) {
   try {
@@ -77,7 +80,15 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    return NextResponse.json(
+    // Generate JWT token
+    const token = sign(
+      { userId: newUser.id, email: newUser.email },
+      JWT_SECRET,
+      { expiresIn: "7d" },
+    );
+
+    // Create response with user data
+    const response = NextResponse.json(
       {
         message: "User registered successfully",
         user: {
@@ -89,6 +100,18 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
+
+    // Set HTTP-only cookie with the token
+    response.cookies.set({
+      name: "token",
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    return response;
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
