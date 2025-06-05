@@ -15,8 +15,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, Calendar, User, LogOut, LayoutDashboard } from "lucide-react";
+import {
+  Bell,
+  Calendar,
+  User,
+  LogOut,
+  LayoutDashboard,
+  Loader2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { EventDetails } from "@/components/ui/event-details";
 
 interface User {
   id: string;
@@ -28,27 +36,81 @@ interface User {
   updatedAt: Date;
 }
 
-interface UserProfileClientProps {
-  user: User;
+interface Event {
+  id: string;
+  title: string;
+  description: string | null;
+  startTime: Date;
+  endTime: Date;
+  isPublic: boolean;
+  categoryId: string;
+  hostName?: string;
+  hostId?: string;
 }
 
-export default function UserProfileClient({ user }: UserProfileClientProps) {
+interface UserProfileClientProps {
+  user: User;
+  events: Event[];
+  invitations: Event[];
+}
+
+export default function UserProfileClient({
+  user,
+  events,
+  invitations: initialInvitations,
+}: UserProfileClientProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState(user);
+  const [isAddingEvent, setIsAddingEvent] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [invitations, setInvitations] = useState(initialInvitations);
+  const [addSuccess, setAddSuccess] = useState<string | null>(null);
 
-  // Dummy data for notifications and events (you can replace these with real data later)
-  const notifications = [
-    { id: 1, message: "New event invitation", time: "2 hours ago" },
-    { id: 2, message: "Event reminder: Team Meeting", time: "1 day ago" },
-    { id: 3, message: "Your event was updated", time: "2 days ago" },
-  ];
+  const handleEventClick = (date: Date) => {
+    // Format the date as YYYY-MM for the URL
+    const monthParam = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    // Navigate to dashboard with the specific month
+    router.push(`/dashboard?month=${monthParam}`);
+  };
 
-  const events = [
-    { id: 1, title: "Team Meeting", date: "2024-03-20", time: "10:00 AM" },
-    { id: 2, title: "Project Review", date: "2024-03-22", time: "2:00 PM" },
-    { id: 3, title: "Client Call", date: "2024-03-25", time: "11:00 AM" },
-  ];
+  const handleAddToCalendar = async (event: Event) => {
+    try {
+      setIsAddingEvent(event.id);
+      setAddSuccess(null);
+
+      // Add the event to the user's calendar
+      const response = await fetch("/api/events/copy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventId: event.id,
+          categoryId: event.categoryId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add event to calendar");
+      }
+
+      // Remove the invitation from the list
+      setInvitations((current) => current.filter((inv) => inv.id !== event.id));
+
+      // Show success message
+      setAddSuccess(event.id);
+
+      // Clear success message after 2 seconds
+      setTimeout(() => {
+        setAddSuccess(null);
+      }, 2000);
+    } catch (error) {
+      console.error("Error adding event to calendar:", error);
+    } finally {
+      setIsAddingEvent(null);
+    }
+  };
 
   const handleSaveChanges = async () => {
     // TODO: Implement save changes logic
@@ -258,16 +320,54 @@ export default function UserProfileClient({ user }: UserProfileClientProps) {
                           >
                             <div>
                               <h3 className="font-medium">{event.title}</h3>
+                              {event.description && (
+                                <p className="text-muted-foreground text-sm">
+                                  {event.description}
+                                </p>
+                              )}
                               <div className="text-muted-foreground mt-1 text-sm">
-                                <p>{event.date}</p>
-                                <p>{event.time}</p>
+                                <p>
+                                  {new Date(
+                                    event.startTime,
+                                  ).toLocaleDateString()}{" "}
+                                  at{" "}
+                                  {new Date(event.startTime).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                                <p>
+                                  {event.isPublic
+                                    ? "Public Event"
+                                    : "Private Event"}{" "}
+                                  • {event.categoryId}
+                                </p>
                               </div>
                             </div>
-                            <Button variant="ghost" size="sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedEvent(event)}
+                            >
                               View Details
                             </Button>
                           </div>
                         ))}
+                        {events.length === 0 && (
+                          <div className="text-muted-foreground py-8 text-center">
+                            <p>No events found.</p>
+                            <Button
+                              variant="link"
+                              className="mt-2"
+                              onClick={() => router.push("/dashboard")}
+                            >
+                              Create your first event
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </ScrollArea>
                   </CardContent>
@@ -276,30 +376,88 @@ export default function UserProfileClient({ user }: UserProfileClientProps) {
               <TabsContent value="notifications">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Notifications</CardTitle>
+                    <CardTitle>Event Invitations</CardTitle>
                     <CardDescription>
-                      Stay updated with your event invitations and updates.
+                      Events you&apos;ve been invited to participate in.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[400px]">
                       <div className="space-y-4">
-                        {notifications.map((notification) => (
+                        {invitations.map((event) => (
                           <div
-                            key={notification.id}
+                            key={event.id}
                             className="flex items-start justify-between rounded-lg border p-4"
                           >
                             <div className="space-y-1">
-                              <p className="text-sm">{notification.message}</p>
-                              <p className="text-muted-foreground text-xs">
-                                {notification.time}
-                              </p>
+                              <h3 className="font-medium">{event.title}</h3>
+                              {event.description && (
+                                <p className="text-muted-foreground text-sm">
+                                  {event.description}
+                                </p>
+                              )}
+                              <div className="text-muted-foreground text-xs">
+                                <p>
+                                  {new Date(
+                                    event.startTime,
+                                  ).toLocaleDateString()}{" "}
+                                  at{" "}
+                                  {new Date(event.startTime).toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                                <p>
+                                  {event.isPublic
+                                    ? "Public Event"
+                                    : "Private Event"}{" "}
+                                  • {event.categoryId}
+                                </p>
+                                <p className="mt-1 font-medium">
+                                  Invited by: {event.hostName}
+                                </p>
+                              </div>
                             </div>
-                            <Button variant="ghost" size="sm">
-                              Mark as Read
-                            </Button>
+                            <div className="flex flex-col gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedEvent(event)}
+                              >
+                                View Details
+                              </Button>
+                              {addSuccess === event.id ? (
+                                <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-600">
+                                  Added to calendar!
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleAddToCalendar(event)}
+                                  disabled={isAddingEvent === event.id}
+                                >
+                                  {isAddingEvent === event.id ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Adding...
+                                    </>
+                                  ) : (
+                                    "Add to Calendar"
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         ))}
+                        {invitations.length === 0 && (
+                          <div className="text-muted-foreground py-8 text-center">
+                            <p>No pending invitations.</p>
+                          </div>
+                        )}
                       </div>
                     </ScrollArea>
                   </CardContent>
@@ -309,6 +467,12 @@ export default function UserProfileClient({ user }: UserProfileClientProps) {
           </div>
         </div>
       </div>
+      {selectedEvent && (
+        <EventDetails
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 }
