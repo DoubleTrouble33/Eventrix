@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 import { useViewStore } from "@/lib/store";
 import {
   DropdownMenu,
@@ -17,8 +17,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+
+interface Invitation {
+  id: string;
+  eventTitle: string;
+  hostName: string;
+}
 
 export default function RightSide() {
   const { setView } = useViewStore();
@@ -28,6 +35,8 @@ export default function RightSide() {
     firstName: string;
     lastName: string;
   } | null>(null);
+  const [invitationCount, setInvitationCount] = useState(0);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -48,26 +57,96 @@ export default function RightSide() {
     fetchUser();
   }, []);
 
+  // Fetch invitations count and preview
+  useEffect(() => {
+    const fetchInvitations = async () => {
+      if (!user) return;
+
+      try {
+        // Fetch count
+        const countResponse = await fetch(
+          `/api/users/${user.id}/invitations/count`,
+          {
+            credentials: "include",
+          },
+        );
+        const countData = await countResponse.json();
+        setInvitationCount(countData.count);
+
+        // Fetch preview of invitations
+        const previewResponse = await fetch(
+          `/api/users/${user.id}/invitations/preview`,
+          {
+            credentials: "include",
+          },
+        );
+        const previewData = await previewResponse.json();
+        setInvitations(previewData.invitations);
+      } catch (error) {
+        console.error("Error fetching invitations:", error);
+      }
+    };
+
+    // Fetch initially and then every minute
+    fetchInvitations();
+    const interval = setInterval(fetchInvitations, 60000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      router.push("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
+  const goToProfile = (openNotifications = false) => {
+    if (user) {
+      router.push(
+        `/user/${user.id}${openNotifications ? "?tab=notifications" : ""}`,
+      );
+    }
+  };
+
+  const markInvitationsAsViewed = async () => {
+    if (!user) return;
+
+    try {
+      await fetch(`/api/users/${user.id}/invitations/preview`, {
         method: "POST",
         credentials: "include",
       });
 
-      if (response.ok) {
-        router.replace("/");
-        router.refresh();
-      }
+      // Refetch invitations and count after marking as viewed
+      const [countResponse, previewResponse] = await Promise.all([
+        fetch(`/api/users/${user.id}/invitations/count`, {
+          credentials: "include",
+        }),
+        fetch(`/api/users/${user.id}/invitations/preview`, {
+          credentials: "include",
+        }),
+      ]);
+
+      const countData = await countResponse.json();
+      const previewData = await previewResponse.json();
+
+      setInvitationCount(countData.count);
+      setInvitations(previewData.invitations);
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Error marking invitations as viewed:", error);
     }
   };
 
   return (
-    <div className="flex items-center space-x-4">
-      <Select onValueChange={(v) => setView(v)}>
-        <SelectTrigger className="focus-visible:ring-ring w-24 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none">
+    <div className="flex items-center gap-4">
+      <Select onValueChange={setView}>
+        <SelectTrigger className="w-24 focus-visible:ring-0 focus-visible:ring-offset-0">
           <SelectValue placeholder="Month" />
         </SelectTrigger>
         <SelectContent>
@@ -77,40 +156,85 @@ export default function RightSide() {
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-3">
-        {user && (
-          <div className="text-sm font-medium text-gray-700">
-            {user.firstName} {user.lastName}
-          </div>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="focus-visible:outline-none">
-            <Avatar className="cursor-pointer hover:opacity-80">
-              <AvatarImage src="/img/avatar-demo.png" />
+      <DropdownMenu onOpenChange={(open) => open && markInvitationsAsViewed()}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            onClick={(e) => e.preventDefault()}
+          >
+            <Bell className="h-5 w-5" />
+            {invitationCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                {invitationCount}
+              </span>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          {invitations.length > 0 ? (
+            <>
+              {invitations.map((invitation) => (
+                <DropdownMenuItem
+                  key={invitation.id}
+                  className="cursor-pointer"
+                  onClick={() => goToProfile(true)}
+                >
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">
+                      {invitation.eventTitle}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Invited by {invitation.hostName}
+                    </p>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="cursor-pointer text-center"
+                onClick={() => goToProfile(true)}
+              >
+                View all notifications
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <div className="text-muted-foreground p-4 text-center text-sm">
+              No new invitations
+            </div>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
               <AvatarFallback>
-                {user ? `${user.firstName[0]}${user.lastName[0]}` : "AV"}
+                {user?.firstName?.[0]}
+                {user?.lastName?.[0]}
               </AvatarFallback>
             </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => user && router.push(`/user/${user.id}`)}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="cursor-pointer text-red-600 focus:text-red-600"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end">
+          <DropdownMenuItem onClick={() => goToProfile()}>
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
+            {invitationCount > 0 && (
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                {invitationCount}
+              </span>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

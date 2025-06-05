@@ -65,5 +65,6 @@ export const eventGuests = pgTable("event_guests", {
     .notNull(),
   email: text("email").notNull(),
   name: text("name").notNull(),
+  viewed: boolean("viewed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
