@@ -29,6 +29,7 @@ export function LeftSide() {
     toggleCalendar,
     deleteCalendar,
     updateCalendar,
+    setSelectedCalendars,
   } = useCalendarStore();
   const [isAddingCalendar, setIsAddingCalendar] = useState(false);
   const [newCalendarName, setNewCalendarName] = useState("");
@@ -85,7 +86,27 @@ export function LeftSide() {
     <div className="flex h-full w-full flex-col">
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4">
-          <h2 className="mb-2 text-lg font-semibold">My Calendars</h2>
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">My Calendars</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (selectedCalendars.length === calendars.length) {
+                  // If all are selected, deselect all
+                  setSelectedCalendars([]);
+                } else {
+                  // Otherwise, select all
+                  setSelectedCalendars(calendars.map((cal) => cal.id));
+                }
+              }}
+              className="text-xs"
+            >
+              {selectedCalendars.length === calendars.length
+                ? "Deselect All"
+                : "Select All"}
+            </Button>
+          </div>
           <div className="space-y-2">
             {calendars.map((calendar) => (
               <div

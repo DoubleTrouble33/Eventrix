@@ -1,5 +1,10 @@
 import { cn } from "@/lib/utils";
-import { getEventsForDay, useEventStore, useCategoryStore } from "@/lib/store";
+import {
+  getEventsForDay,
+  useEventStore,
+  useCategoryStore,
+  useCalendarStore,
+} from "@/lib/store";
 import dayjs from "dayjs";
 import React, { useState } from "react";
 import { EventPopover } from "./ui/event-popover";
@@ -17,6 +22,7 @@ export default function MonthViewBox({
   const [showEventPopover, setShowEventPopover] = useState(false);
   const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
   const { selectedCategory } = useCategoryStore();
+  const { selectedCalendars } = useCalendarStore();
 
   if (!day) {
     return (
@@ -27,10 +33,15 @@ export default function MonthViewBox({
   const isFirstDayOfMonth = day?.date() === 1;
   const isToday = day.format("DD-MM-YY") === dayjs().format("DD-MM-YY");
 
-  // Filter events for this day and by selected category
-  const dayEvents = getEventsForDay(events, day).filter(
-    (event) => !selectedCategory || event.categoryId === selectedCategory,
-  );
+  // Filter events for this day and by selected category and calendars
+  const dayEvents = getEventsForDay(events, day).filter((event) => {
+    const categoryMatch =
+      !selectedCategory || event.categoryId === selectedCategory;
+    const calendarMatch =
+      selectedCalendars.length > 0 &&
+      selectedCalendars.includes(event.categoryId);
+    return categoryMatch && calendarMatch;
+  });
 
   const handleEventClick = (event: CalendarEventType) => {
     setSelectedEvent(event);
