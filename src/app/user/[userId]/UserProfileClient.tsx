@@ -127,8 +127,30 @@ export default function UserProfileClient({
   };
 
   const handleSaveChanges = async () => {
-    // TODO: Implement save changes logic
-    setIsEditing(false);
+    try {
+      const response = await fetch("/api/user/update", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: editedUser.firstName,
+          lastName: editedUser.lastName,
+          email: editedUser.email,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update user");
+      }
+
+      const updatedUser = await response.json();
+      setEditedUser(updatedUser);
+      setIsEditing(false);
+      window.location.reload(); // Force a full page refresh to get the new data
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
   };
 
   const handleLogout = async () => {
@@ -220,16 +242,28 @@ export default function UserProfileClient({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="text-sm">
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Member since</span>
-                    <span>{new Date(user.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Last updated</span>
-                    <span>{new Date(user.updatedAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
+                {user.createdAt && (
+                  <p>
+                    Created:{" "}
+                    {new Date(user.createdAt).toLocaleDateString("en-GB", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      timeZone: "UTC",
+                    })}
+                  </p>
+                )}
+                {user.updatedAt && (
+                  <p>
+                    Last updated:{" "}
+                    {new Date(user.updatedAt).toLocaleDateString("en-GB", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      timeZone: "UTC",
+                    })}
+                  </p>
+                )}
                 <Button
                   className="w-full"
                   variant={isEditing ? "destructive" : "secondary"}
@@ -341,15 +375,23 @@ export default function UserProfileClient({
                               )}
                               <div className="text-muted-foreground mt-1 text-sm">
                                 <p>
-                                  {new Date(
-                                    event.startTime,
-                                  ).toLocaleDateString()}{" "}
+                                  {new Date(event.startTime).toLocaleDateString(
+                                    "en-GB",
+                                    {
+                                      year: "numeric",
+                                      month: "2-digit",
+                                      day: "2-digit",
+                                      timeZone: "UTC",
+                                    },
+                                  )}
                                   at{" "}
                                   {new Date(event.startTime).toLocaleTimeString(
-                                    [],
+                                    "en-GB",
                                     {
                                       hour: "2-digit",
                                       minute: "2-digit",
+                                      hour12: false,
+                                      timeZone: "UTC",
                                     },
                                   )}
                                 </p>
@@ -412,15 +454,23 @@ export default function UserProfileClient({
                               )}
                               <div className="text-muted-foreground text-xs">
                                 <p>
-                                  {new Date(
-                                    event.startTime,
-                                  ).toLocaleDateString()}{" "}
+                                  {new Date(event.startTime).toLocaleDateString(
+                                    "en-GB",
+                                    {
+                                      year: "numeric",
+                                      month: "2-digit",
+                                      day: "2-digit",
+                                      timeZone: "UTC",
+                                    },
+                                  )}
                                   at{" "}
                                   {new Date(event.startTime).toLocaleTimeString(
-                                    [],
+                                    "en-GB",
                                     {
                                       hour: "2-digit",
                                       minute: "2-digit",
+                                      hour12: false,
+                                      timeZone: "UTC",
                                     },
                                   )}
                                 </p>
