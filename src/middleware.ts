@@ -6,7 +6,6 @@ export function middleware(request: NextRequest) {
   const isAuthPage =
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname === "/register";
-  const isPublicPage = request.nextUrl.pathname === "/";
 
   // If trying to access protected route while not authenticated
   if (!isAuthenticated && request.nextUrl.pathname.startsWith("/dashboard")) {

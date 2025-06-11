@@ -31,20 +31,33 @@ export default function LandingPage() {
     lastName: string;
     avatar: string;
   } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch user data when component mounts
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        // Check if we have cached user data
+        const cachedUser = sessionStorage.getItem("user");
+        if (cachedUser) {
+          setUser(JSON.parse(cachedUser));
+          setIsLoading(false);
+          return;
+        }
+
         const response = await fetch("/api/auth/user", {
           credentials: "include",
         });
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
+          // Cache the user data
+          sessionStorage.setItem("user", JSON.stringify(data.user));
         }
       } catch (error) {
         console.error("Error fetching user:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -92,7 +105,11 @@ export default function LandingPage() {
             />
           </div>
           <div className="hidden space-x-4 lg:flex lg:flex-1 lg:justify-end">
-            {user ? (
+            {isLoading ? (
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 animate-pulse rounded-full bg-gray-200" />
+              </div>
+            ) : user ? (
               <div className="flex items-center gap-3">
                 <div className="text-sm font-medium text-gray-700">
                   {user.firstName} {user.lastName}
