@@ -53,6 +53,8 @@ export interface CalendarEventType {
   repeatEndDate?: string;
   repeatDuration?: "week" | "2weeks" | "month" | "3months" | "6months";
   categoryId: string;
+  createdAt: string;
+  updatedAt: string;
   guests?: {
     id: string;
     name: string;
