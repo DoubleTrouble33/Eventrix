@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { events, eventGuests } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -145,16 +145,37 @@ export async function GET() {
     console.log("Fetching events for user:", session.user.id);
 
     try {
-      // Get all events for the user
+      // Get events where user is the creator
       const userEvents = await db
         .select()
         .from(events)
         .where(eq(events.userId, session.user.id));
 
-      console.log("Found events:", userEvents);
+      // Get events where user is an accepted guest
+      const guestEvents = await db
+        .select()
+        .from(events)
+        .innerJoin(eventGuests, eq(events.id, eventGuests.eventId))
+        .where(
+          and(
+            eq(eventGuests.email, session.user.email),
+            eq(eventGuests.isAccepted, true),
+          ),
+        );
+
+      // Combine both sets of events, removing duplicates
+      const allEvents = [
+        ...userEvents,
+        ...guestEvents.map((e) => e.events),
+      ].filter(
+        (event, index, self) =>
+          index === self.findIndex((e) => e.id === event.id),
+      );
+
+      console.log("Found events:", allEvents);
 
       // Get guests for all events
-      const eventIds = userEvents.map((event) => event.id);
+      const eventIds = allEvents.map((event) => event.id);
       let guests: EventGuest[] = [];
 
       if (eventIds.length > 0) {
@@ -172,7 +193,7 @@ export async function GET() {
       }
 
       // Convert dates to UTC and attach guests to their respective events
-      const eventsWithUTC = userEvents.map((event) => ({
+      const eventsWithUTC = allEvents.map((event) => ({
         ...event,
         startTime: dayjs(event.startTime).tz(localTimezone).utc().toISOString(),
         endTime: dayjs(event.endTime).tz(localTimezone).utc().toISOString(),

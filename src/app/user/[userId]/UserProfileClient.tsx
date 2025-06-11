@@ -91,23 +91,6 @@ export default function UserProfileClient({
         throw new Error("Failed to accept invitation");
       }
 
-      // Add the event to the user's calendar
-      const copyResponse = await fetch("/api/events/copy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          eventId: event.id,
-          categoryId: event.categoryId,
-        }),
-        credentials: "include",
-      });
-
-      if (!copyResponse.ok) {
-        throw new Error("Failed to add event to calendar");
-      }
-
       // Remove the invitation from the list
       setInvitations((current) => current.filter((inv) => inv.id !== event.id));
 
@@ -120,7 +103,7 @@ export default function UserProfileClient({
         router.refresh(); // This will trigger a server-side rerender
       }, 2000);
     } catch (error) {
-      console.error("Error adding event to calendar:", error);
+      console.error("Error accepting invitation:", error);
     } finally {
       setIsAddingEvent(null);
     }
@@ -481,7 +464,7 @@ export default function UserProfileClient({
                               </Button>
                               {addSuccess === event.id ? (
                                 <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-600">
-                                  Added to calendar!
+                                  Invitation accepted!
                                 </div>
                               ) : (
                                 <Button
@@ -493,10 +476,10 @@ export default function UserProfileClient({
                                   {isAddingEvent === event.id ? (
                                     <>
                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Adding...
+                                      Accepting...
                                     </>
                                   ) : (
-                                    "Add to Calendar"
+                                    "Accept Invitation"
                                   )}
                                 </Button>
                               )}

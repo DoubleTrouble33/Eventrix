@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
 import { events, users, eventGuests } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import UserProfileClient from "./UserProfileClient";
 
@@ -72,14 +72,19 @@ async function getEventInvitations(userId: string): Promise<Event[]> {
 
   if (!user[0]) return [];
 
-  // Get events where the user is invited as a guest
+  // Get events where the user is invited as a guest AND hasn't accepted yet
   const result = await db
     .select({
       event: events,
     })
     .from(eventGuests)
     .innerJoin(events, eq(eventGuests.eventId, events.id))
-    .where(eq(eventGuests.email, user[0].email));
+    .where(
+      and(
+        eq(eventGuests.email, user[0].email),
+        eq(eventGuests.isAccepted, false),
+      ),
+    );
 
   return result.map((r) => r.event);
 }

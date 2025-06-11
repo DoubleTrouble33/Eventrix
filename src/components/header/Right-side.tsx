@@ -102,7 +102,7 @@ export default function RightSide() {
         method: "POST",
         credentials: "include",
       });
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);
     }
