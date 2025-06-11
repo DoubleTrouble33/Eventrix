@@ -54,22 +54,56 @@ export function EventSummary() {
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  } | null>(null);
+
+  // Fetch current user data
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch("/api/auth/user", {
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        }
+      } catch (error) {
+        console.error("Error fetching current user:", error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
       if (!selectedEvent) return;
 
       try {
-        // Fetch creator information
-        const creatorResponse = await fetch(
-          `/api/users/${selectedEvent.userId}`,
-          {
-            credentials: "include",
-          },
-        );
-        if (creatorResponse.ok) {
-          const creatorData = await creatorResponse.json();
-          setCreator(creatorData.user);
+        // If the event creator is the current user, use their data
+        if (currentUser && selectedEvent.userId === currentUser.id) {
+          setCreator({
+            firstName: currentUser.firstName,
+            lastName: currentUser.lastName,
+            avatar: currentUser.avatar,
+          });
+        } else {
+          // Only fetch creator data if it's a different user
+          const creatorResponse = await fetch(
+            `/api/users/${selectedEvent.userId}`,
+            {
+              credentials: "include",
+            },
+          );
+          if (creatorResponse.ok) {
+            const creatorData = await creatorResponse.json();
+            setCreator(creatorData.user);
+          }
         }
 
         // Fetch participants
@@ -89,7 +123,7 @@ export function EventSummary() {
     };
 
     fetchEventDetails();
-  }, [selectedEvent]);
+  }, [selectedEvent, currentUser]);
 
   // Search users effect
   useEffect(() => {
