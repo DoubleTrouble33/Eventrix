@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import dayjs from "dayjs";
+import { useCalendarStore } from "@/lib/store";
 
 interface EventRendererProps {
   event: CalendarEventType;
@@ -21,10 +22,8 @@ export function EventRenderer({
 }: EventRendererProps) {
   const [showOptions, setShowOptions] = useState(false);
   const timeFormat = variant === "month" ? "HH:mm" : "h:mm A";
-
-  const eventColorClasses = event.isPublic
-    ? "bg-green-100 text-green-700 hover:bg-green-200"
-    : "bg-blue-100 text-blue-700 hover:bg-blue-200";
+  const { calendars } = useCalendarStore();
+  const calendar = calendars.find((c) => c.id === event.categoryId);
 
   return (
     <div className="relative">
@@ -32,11 +31,15 @@ export function EventRenderer({
         onClick={() => onClick?.(event)}
         className={cn(
           "group w-full truncate rounded px-1 text-left text-xs",
-          eventColorClasses,
           variant === "month" && "py-0",
           variant === "week" && "py-1",
           variant === "day" && "py-2",
         )}
+        style={{
+          backgroundColor: calendar?.color + "20", // Add 20% opacity
+          color: calendar?.color,
+          borderLeft: `3px solid ${calendar?.color}`,
+        }}
       >
         <div className="flex items-center">
           {variant !== "month" && (
@@ -48,9 +51,7 @@ export function EventRenderer({
           <span>{event.title}</span>
         </div>
         {event.isRepeating && variant !== "month" && (
-          <div
-            className={`text-[0.6rem] ${event.isPublic ? "text-green-500" : "text-blue-500"}`}
-          >
+          <div className="text-[0.6rem]" style={{ color: calendar?.color }}>
             (Repeating)
           </div>
         )}
