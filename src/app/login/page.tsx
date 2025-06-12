@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,11 +15,13 @@ export default function LoginPage() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [isBlocked, setIsBlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsBlocked(false);
     setIsLoading(true);
 
     try {
@@ -39,6 +42,10 @@ export default function LoginPage() {
         router.replace("/dashboard"); // Use replace instead of push to prevent going back to login
         router.refresh(); // Refresh to update auth state
       } else {
+        // Check if user is blocked
+        if (response.status === 403) {
+          setIsBlocked(true);
+        }
         // Handle specific error messages
         const errorMessage = data.error || "Invalid email or password";
         console.error("Login failed:", errorMessage);
@@ -83,10 +90,28 @@ export default function LoginPage() {
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div
-                className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700"
+                className={`relative flex items-center gap-3 rounded border px-4 py-3 ${
+                  isBlocked
+                    ? "border-red-500 bg-red-100 text-red-900"
+                    : "border-red-400 bg-red-100 text-red-700"
+                }`}
                 role="alert"
               >
-                <span className="block sm:inline">{error}</span>
+                <AlertCircle
+                  className={`h-5 w-5 ${isBlocked ? "text-red-500" : "text-red-400"}`}
+                />
+                <div className="flex flex-col">
+                  <span className="block font-medium">
+                    {isBlocked ? "Account Blocked" : "Error"}
+                  </span>
+                  <span className="block text-sm">{error}</span>
+                  {isBlocked && (
+                    <span className="mt-1 text-sm">
+                      Please contact support for assistance in unblocking your
+                      account.
+                    </span>
+                  )}
+                </div>
               </div>
             )}
             <div className="space-y-4">
