@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   lastName: text("last_name").notNull(),
   password: text("password").notNull(), // Will be hashed
   avatar: text("avatar").default("/img/avatar-demo.png"), // Base64 encoded image
+  isAdmin: boolean("is_admin").default(false).notNull(),
+  isBlocked: boolean("is_blocked").default(false).notNull(),
   calendars: jsonb("calendars")
     .$type<
       {

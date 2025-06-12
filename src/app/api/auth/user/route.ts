@@ -16,6 +16,7 @@ export async function GET() {
         firstName: session.user.firstName,
         lastName: session.user.lastName,
         avatar: session.user.avatar,
+        isAdmin: session.user.isAdmin,
       },
     });
   } catch (error) {

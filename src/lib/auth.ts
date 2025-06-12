@@ -51,12 +51,20 @@ export async function auth() {
         firstName: users.firstName,
         lastName: users.lastName,
         avatar: users.avatar,
+        isAdmin: users.isAdmin,
+        isBlocked: users.isBlocked,
       })
       .from(users)
       .where(eq(users.id, decoded.userId));
 
     if (!user) {
       console.log("User not found in database");
+      return null;
+    }
+
+    // Check if user is blocked
+    if (user.isBlocked) {
+      console.log("User is blocked");
       return null;
     }
 
@@ -67,6 +75,7 @@ export async function auth() {
         firstName: user.firstName,
         lastName: user.lastName,
         avatar: user.avatar,
+        isAdmin: user.isAdmin,
       },
     };
   } catch (error) {

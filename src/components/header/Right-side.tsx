@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Bell } from "lucide-react";
+import { User, LogOut, Bell, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -36,6 +36,7 @@ export default function RightSide() {
     firstName: string;
     lastName: string;
     avatar: string;
+    isAdmin?: boolean;
   } | null>(null);
   const [unviewedCount, setUnviewedCount] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -200,44 +201,58 @@ export default function RightSide() {
               </DropdownMenuItem>
             </>
           ) : (
-            <div className="p-4 text-center text-sm text-gray-500">
+            <div className="text-muted-foreground p-4 text-center text-sm">
               No new notifications
             </div>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-            <Avatar className="h-12 w-12">
-              <AvatarImage
-                src={user?.avatar || "/img/avatar-demo.png"}
-                alt={`${user?.firstName} ${user?.lastName}`}
-                className="object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "/img/avatar-demo.png";
-                }}
-              />
+      {user?.isAdmin && (
+        <Button
+          variant="ghost"
+          className="gap-2 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+          onClick={() => router.push("/admin")}
+        >
+          <Shield className="h-4 w-4" />
+          Admin Dashboard
+        </Button>
+      )}
+
+      <div className="flex items-center gap-2">
+        {user && (
+          <span
+            className={`text-sm font-medium ${user.isAdmin ? "text-emerald-600" : ""}`}
+          >
+            {user.firstName} {user.lastName}
+            {user.isAdmin && (
+              <span className="ml-1 text-xs text-emerald-600">Admin</span>
+            )}
+          </span>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Avatar className="cursor-pointer">
+              <AvatarImage src={user?.avatar} />
               <AvatarFallback>
                 {user?.firstName?.[0]}
                 {user?.lastName?.[0]}
               </AvatarFallback>
             </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuItem onClick={() => goToProfile()}>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => goToProfile()}>
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
