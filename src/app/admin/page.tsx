@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, UserCog, Calendar, ArrowLeft } from "lucide-react";
+import { Search, UserCog, Calendar, ArrowLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -32,6 +33,7 @@ export default function AdminDashboard() {
   const [userSearch, setUserSearch] = useState("");
   const [eventSearch, setEventSearch] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is admin
@@ -71,10 +73,32 @@ export default function AdminDashboard() {
   };
 
   const deleteEvent = async (eventId: string) => {
-    await fetch(`/api/admin/events/${eventId}`, {
-      method: "DELETE",
-    });
-    fetchEvents();
+    try {
+      if (
+        !confirm(
+          "Are you sure you want to delete this event? This action cannot be undone.",
+        )
+      ) {
+        return;
+      }
+
+      setDeletingEventId(eventId);
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
+
+      await fetchEvents();
+      toast.success("Event deleted successfully");
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error("Failed to delete event. Please try again.");
+    } finally {
+      setDeletingEventId(null);
+    }
   };
 
   const filteredUsers = users.filter(
@@ -203,7 +227,7 @@ export default function AdminDashboard() {
                 <Search className="h-5 w-5 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Search events by name..."
+                  placeholder="Search events by title..."
                   value={eventSearch}
                   onChange={(e) => setEventSearch(e.target.value)}
                   className="max-w-md"
@@ -215,7 +239,7 @@ export default function AdminDashboard() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
-                        Event Name
+                        Title
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
                         Created By
@@ -251,8 +275,15 @@ export default function AdminDashboard() {
                             variant="destructive"
                             size="sm"
                             onClick={() => deleteEvent(event.id)}
+                            disabled={deletingEventId === event.id}
+                            className="gap-2"
                           >
-                            Delete
+                            <Trash2 className="h-4 w-4" />
+                            {deletingEventId === event.id ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              "Delete"
+                            )}
                           </Button>
                         </td>
                       </tr>
