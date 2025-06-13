@@ -25,6 +25,13 @@ import {
 import { useRouter } from "next/navigation";
 import { EventDetails } from "@/components/ui/event-details";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface User {
   id: string;
@@ -46,6 +53,9 @@ interface Event {
   categoryId: string;
   hostName?: string;
   hostId?: string;
+  isRepeating?: boolean;
+  repeatEndDate?: Date | null;
+  userId: string;
 }
 
 interface UserProfileClientProps {
@@ -66,6 +76,24 @@ export default function UserProfileClient({
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [invitations, setInvitations] = useState(initialInvitations);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
+  const [eventFilter, setEventFilter] = useState<"all" | "created" | "invited">(
+    "all",
+  );
+
+  // Filter events based on the selected filter
+  const filteredEvents = (() => {
+    if (eventFilter === "created") {
+      return events.filter((event) => event.userId === user.id);
+    }
+    if (eventFilter === "invited") {
+      return [
+        ...events.filter((event) => event.userId !== user.id),
+        ...invitations,
+      ];
+    }
+    // For "all", combine both events and invitations
+    return [...events, ...invitations];
+  })();
 
   const handleAddToCalendar = async (event: Event) => {
     try {
@@ -322,15 +350,38 @@ export default function UserProfileClient({
               <TabsContent value="events">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Your Events</CardTitle>
-                    <CardDescription>
-                      Events you&apos;ve created or are participating in.
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Your Events</CardTitle>
+                        <CardDescription>
+                          Events you&apos;ve created or are participating in.
+                        </CardDescription>
+                      </div>
+                      <Select
+                        value={eventFilter}
+                        onValueChange={(value: "all" | "created" | "invited") =>
+                          setEventFilter(value)
+                        }
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Filter events" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Events</SelectItem>
+                          <SelectItem value="created">
+                            Created Events
+                          </SelectItem>
+                          <SelectItem value="invited">
+                            Invited Events
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[400px]">
                       <div className="space-y-4">
-                        {events.map((event) => (
+                        {filteredEvents.map((event) => (
                           <div
                             key={event.id}
                             className="flex items-center justify-between rounded-lg border p-4"
@@ -381,7 +432,7 @@ export default function UserProfileClient({
                             </Button>
                           </div>
                         ))}
-                        {events.length === 0 && (
+                        {filteredEvents.length === 0 && (
                           <div className="text-muted-foreground py-8 text-center">
                             <p>No events found.</p>
                             <Button

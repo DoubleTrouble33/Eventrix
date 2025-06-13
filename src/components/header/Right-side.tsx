@@ -226,7 +226,7 @@ export default function RightSide() {
           >
             {user.firstName} {user.lastName}
             {user.isAdmin && (
-              <span className="ml-1 text-xs text-emerald-600">Admin</span>
+              <span className="ml-1 text-xs text-emerald-600"></span>
             )}
           </span>
         )}

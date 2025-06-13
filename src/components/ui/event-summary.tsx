@@ -477,14 +477,16 @@ export function EventSummary() {
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              className="flex items-center gap-2"
-            >
-              <Trash className="h-4 w-4" />
-              Delete Event
-            </Button>
+            {currentUser && selectedEvent.userId === currentUser.id && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="flex items-center gap-2"
+              >
+                <Trash className="h-4 w-4" />
+                Delete Event
+              </Button>
+            )}
             <Button variant="outline" onClick={closeEventSummary}>
               Close
             </Button>

@@ -15,7 +15,7 @@ interface EventDetailsProps {
     hostName?: string;
     hostId?: string;
     isRepeating?: boolean;
-    repeatEndDate?: Date;
+    repeatEndDate?: Date | null;
   };
   onClose: () => void;
 }

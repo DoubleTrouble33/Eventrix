@@ -57,7 +57,44 @@ async function getUser(userId: string): Promise<User | null> {
 }
 
 async function getUserEvents(userId: string): Promise<Event[]> {
-  return await db.select().from(events).where(eq(events.userId, userId));
+  // First get the user's email for guest event queries
+  const user = await db
+    .select({
+      email: users.email,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user[0]) return [];
+
+  // Get events where user is the creator
+  const createdEvents = await db
+    .select()
+    .from(events)
+    .where(eq(events.userId, userId));
+
+  // Get events where user is an accepted guest
+  const guestEvents = await db
+    .select()
+    .from(events)
+    .innerJoin(eventGuests, eq(events.id, eventGuests.eventId))
+    .where(
+      and(
+        eq(eventGuests.email, user[0].email),
+        eq(eventGuests.isAccepted, true),
+      ),
+    );
+
+  // Combine both sets of events, removing duplicates
+  const allEvents = [
+    ...createdEvents,
+    ...guestEvents.map((e) => e.events),
+  ].filter(
+    (event, index, self) => index === self.findIndex((e) => e.id === event.id),
+  );
+
+  return allEvents;
 }
 
 async function getEventInvitations(userId: string): Promise<Event[]> {
