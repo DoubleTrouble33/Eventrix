@@ -69,6 +69,13 @@ interface Contact {
   addedAt: Date;
 }
 
+interface ContactGroup {
+  id: string;
+  name: string;
+  color: string;
+  memberIds: string[];
+}
+
 interface UserProfileClientProps {
   user: User;
   events: Event[];
@@ -93,6 +100,27 @@ export default function UserProfileClient({
   const [contactFilter, setContactFilter] = useState<
     "all" | "active" | "pending" | "declined"
   >("all");
+
+  // Group management state
+  const [groups, setGroups] = useState<ContactGroup[]>([
+    {
+      id: "1",
+      name: "WorkBuddies",
+      color: "#3B82F6",
+      memberIds: ["1", "2"],
+    },
+    {
+      id: "2",
+      name: "College Friends",
+      color: "#10B981",
+      memberIds: ["4"],
+    },
+  ]);
+  const [isAddingGroup, setIsAddingGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupColor, setNewGroupColor] = useState("#3B82F6");
+  const [activeTab, setActiveTab] = useState("events");
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   // Dummy contacts data for UI demonstration
   const [contacts] = useState<Contact[]>([
@@ -170,12 +198,26 @@ export default function UserProfileClient({
     return [...events, ...invitations];
   })();
 
-  // Filter contacts based on the selected filter
+  // Filter contacts based on the selected filter and group
   const filteredContacts = (() => {
-    if (contactFilter === "all") {
-      return contacts;
+    let filtered = contacts;
+
+    // Filter by status first
+    if (contactFilter !== "all") {
+      filtered = filtered.filter((contact) => contact.status === contactFilter);
     }
-    return contacts.filter((contact) => contact.status === contactFilter);
+
+    // Then filter by selected group if any
+    if (selectedGroup) {
+      const group = groups.find((g) => g.id === selectedGroup);
+      if (group) {
+        filtered = filtered.filter((contact) =>
+          group.memberIds.includes(contact.id),
+        );
+      }
+    }
+
+    return filtered;
   })();
 
   const handleAddToCalendar = async (event: Event) => {
@@ -269,6 +311,43 @@ export default function UserProfileClient({
     setUserData((prev) => ({ ...prev, avatar: newAvatarUrl }));
   };
 
+  // Group management functions
+  const handleAddGroup = () => {
+    if (newGroupName.trim()) {
+      const newGroup: ContactGroup = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: newGroupName.trim(),
+        color: newGroupColor,
+        memberIds: [],
+      };
+      setGroups([...groups, newGroup]);
+      setNewGroupName("");
+      setNewGroupColor("#3B82F6");
+      setIsAddingGroup(false);
+    }
+  };
+
+  const handleAddToGroup = (contactId: string, groupId: string) => {
+    setGroups(
+      groups.map((group) => {
+        if (group.id === groupId) {
+          const isAlreadyInGroup = group.memberIds.includes(contactId);
+          if (isAlreadyInGroup) {
+            // Remove from group
+            return {
+              ...group,
+              memberIds: group.memberIds.filter((id) => id !== contactId),
+            };
+          } else {
+            // Add to group
+            return { ...group, memberIds: [...group.memberIds, contactId] };
+          }
+        }
+        return group;
+      }),
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Header */}
@@ -353,6 +432,89 @@ export default function UserProfileClient({
                 >
                   {isEditing ? "Cancel Editing" : "Edit Profile"}
                 </Button>
+
+                {/* Contact Groups Section - Only show when contacts tab is active */}
+                {activeTab === "contacts" && (
+                  <div className="border-t pt-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-medium">Contact Groups</h3>
+                      {selectedGroup && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setSelectedGroup(null)}
+                        >
+                          Show All
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {groups.map((group) => (
+                        <div
+                          key={group.id}
+                          className={`flex cursor-pointer items-center justify-between rounded-lg border p-2 transition-colors hover:bg-gray-50 ${
+                            selectedGroup === group.id
+                              ? "border-blue-200 bg-blue-50"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            setSelectedGroup(
+                              selectedGroup === group.id ? null : group.id,
+                            )
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: group.color }}
+                            />
+                            <span className="text-sm font-medium">
+                              {group.name}
+                            </span>
+                          </div>
+                          <span className="text-muted-foreground text-xs">
+                            {group.memberIds.length}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2 w-full justify-start"
+                      onClick={() => setIsAddingGroup(!isAddingGroup)}
+                    >
+                      <Users className="mr-2 h-3 w-3" />
+                      Add Group
+                    </Button>
+                    {isAddingGroup && (
+                      <div className="mt-2 space-y-2 rounded-lg border p-2">
+                        <Input
+                          placeholder="Group name"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={newGroupColor}
+                            onChange={(e) => setNewGroupColor(e.target.value)}
+                            className="h-6 w-6 cursor-pointer rounded border"
+                          />
+                          <Button
+                            size="sm"
+                            className="h-6 flex-1 text-xs"
+                            onClick={handleAddGroup}
+                          >
+                            Create
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -418,7 +580,11 @@ export default function UserProfileClient({
             </Card>
 
             {/* Events, Notifications, and Contacts */}
-            <Tabs defaultValue="events" className="w-full">
+            <Tabs
+              defaultValue="events"
+              className="w-full"
+              onValueChange={setActiveTab}
+            >
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="events" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -644,9 +810,15 @@ export default function UserProfileClient({
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>Your Contacts</CardTitle>
+                        <CardTitle>
+                          {selectedGroup
+                            ? `${groups.find((g) => g.id === selectedGroup)?.name} Group`
+                            : "Your Contacts"}
+                        </CardTitle>
                         <CardDescription>
-                          People you can invite to events and collaborate with.
+                          {selectedGroup
+                            ? `Members of the ${groups.find((g) => g.id === selectedGroup)?.name} group.`
+                            : "People you can invite to events and collaborate with."}
                         </CardDescription>
                       </div>
                       <Select
@@ -733,12 +905,52 @@ export default function UserProfileClient({
                             </div>
                             <div className="flex items-center space-x-2">
                               {contact.status === "active" && (
-                                <Select>
-                                  <SelectTrigger className="w-[120px]">
-                                    <SelectValue placeholder="Actions" />
+                                <Select
+                                  value="" // Always reset to empty to show placeholder
+                                  onValueChange={(value) => {
+                                    if (value.startsWith("group-")) {
+                                      const groupId = value.replace(
+                                        "group-",
+                                        "",
+                                      );
+                                      handleAddToGroup(contact.id, groupId);
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="w-[140px]">
+                                    <SelectValue placeholder="Manage Groups" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {/* Options will be filled later */}
+                                    {groups.map((group) => {
+                                      const isInGroup =
+                                        group.memberIds.includes(contact.id);
+                                      return (
+                                        <SelectItem
+                                          key={group.id}
+                                          value={`group-${group.id}`}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div
+                                              className="h-2 w-2 rounded-full"
+                                              style={{
+                                                backgroundColor: group.color,
+                                              }}
+                                            />
+                                            <span>
+                                              {isInGroup
+                                                ? "Remove from"
+                                                : "Add to"}{" "}
+                                              {group.name}
+                                            </span>
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })}
+                                    {groups.length === 0 && (
+                                      <SelectItem value="no-groups" disabled>
+                                        No groups available
+                                      </SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                               )}
