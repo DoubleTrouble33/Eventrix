@@ -21,6 +21,7 @@ import {
   LogOut,
   LayoutDashboard,
   Loader2,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EventDetails } from "@/components/ui/event-details";
@@ -58,6 +59,16 @@ interface Event {
   userId: string;
 }
 
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string;
+  status: "active" | "pending" | "declined";
+  addedAt: Date;
+}
+
 interface UserProfileClientProps {
   user: User;
   events: Event[];
@@ -79,6 +90,70 @@ export default function UserProfileClient({
   const [eventFilter, setEventFilter] = useState<"all" | "created" | "invited">(
     "all",
   );
+  const [contactFilter, setContactFilter] = useState<
+    "all" | "active" | "pending" | "declined"
+  >("all");
+
+  // Dummy contacts data for UI demonstration
+  const [contacts] = useState<Contact[]>([
+    {
+      id: "1",
+      firstName: "John",
+      lastName: "Doe",
+      email: "john.doe@example.com",
+      avatar: "/img/avatar-demo.png",
+      status: "active",
+      addedAt: new Date("2024-01-15"),
+    },
+    {
+      id: "2",
+      firstName: "Jane",
+      lastName: "Smith",
+      email: "jane.smith@example.com",
+      avatar:
+        "/avatars/avatar-aec0cc4b-2077-4821-920a-b28403ed7799-1749145483983-722039292.jpeg",
+      status: "active",
+      addedAt: new Date("2024-02-10"),
+    },
+    {
+      id: "3",
+      firstName: "Mike",
+      lastName: "Johnson",
+      email: "mike.johnson@example.com",
+      avatar:
+        "/avatars/avatar-aec0cc4b-2077-4821-920a-b28403ed7799-1749145390867-883170595.jpeg",
+      status: "pending",
+      addedAt: new Date("2024-03-05"),
+    },
+    {
+      id: "4",
+      firstName: "Sarah",
+      lastName: "Wilson",
+      email: "sarah.wilson@example.com",
+      avatar: "/img/avatar-demo.png",
+      status: "active",
+      addedAt: new Date("2024-02-28"),
+    },
+    {
+      id: "5",
+      firstName: "Alex",
+      lastName: "Brown",
+      email: "alex.brown@example.com",
+      avatar: "/img/avatar-demo.png",
+      status: "declined",
+      addedAt: new Date("2024-01-20"),
+    },
+    {
+      id: "6",
+      firstName: "Emma",
+      lastName: "Davis",
+      email: "emma.davis@example.com",
+      avatar:
+        "/avatars/avatar-aec0cc4b-2077-4821-920a-b28403ed7799-1749145483983-722039292.jpeg",
+      status: "pending",
+      addedAt: new Date("2024-03-10"),
+    },
+  ]);
 
   // Filter events based on the selected filter
   const filteredEvents = (() => {
@@ -93,6 +168,14 @@ export default function UserProfileClient({
     }
     // For "all", combine both events and invitations
     return [...events, ...invitations];
+  })();
+
+  // Filter contacts based on the selected filter
+  const filteredContacts = (() => {
+    if (contactFilter === "all") {
+      return contacts;
+    }
+    return contacts.filter((contact) => contact.status === contactFilter);
   })();
 
   const handleAddToCalendar = async (event: Event) => {
@@ -334,9 +417,9 @@ export default function UserProfileClient({
               </CardContent>
             </Card>
 
-            {/* Events and Notifications */}
+            {/* Events, Notifications, and Contacts */}
             <Tabs defaultValue="events" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="events" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Your Events
@@ -347,6 +430,13 @@ export default function UserProfileClient({
                 >
                   <Bell className="h-4 w-4" />
                   Notifications
+                </TabsTrigger>
+                <TabsTrigger
+                  value="contacts"
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  Contacts
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="events">
@@ -542,6 +632,137 @@ export default function UserProfileClient({
                         {invitations.length === 0 && (
                           <div className="text-muted-foreground py-8 text-center">
                             <p>No pending invitations.</p>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="contacts">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Your Contacts</CardTitle>
+                        <CardDescription>
+                          People you can invite to events and collaborate with.
+                        </CardDescription>
+                      </div>
+                      <Select
+                        value={contactFilter}
+                        onValueChange={(
+                          value: "all" | "active" | "pending" | "declined",
+                        ) => setContactFilter(value)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Filter contacts" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Contacts</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="declined">Declined</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-4">
+                        {filteredContacts.map((contact) => (
+                          <div
+                            key={contact.id}
+                            className="flex items-center justify-between rounded-lg border p-4"
+                          >
+                            <div className="flex items-center space-x-4">
+                              <div className="relative">
+                                <Image
+                                  src={contact.avatar}
+                                  alt={`${contact.firstName} ${contact.lastName}`}
+                                  width={48}
+                                  height={48}
+                                  className="rounded-full object-cover"
+                                />
+                                <div
+                                  className={`absolute -right-1 -bottom-1 h-4 w-4 rounded-full border-2 border-white ${
+                                    contact.status === "active"
+                                      ? "bg-green-500"
+                                      : contact.status === "pending"
+                                        ? "bg-yellow-500"
+                                        : "bg-red-500"
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <h3 className="font-medium">
+                                  {contact.firstName} {contact.lastName}
+                                </h3>
+                                <p className="text-muted-foreground text-sm">
+                                  {contact.email}
+                                </p>
+                                <div className="text-muted-foreground mt-1 flex items-center text-xs">
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                      contact.status === "active"
+                                        ? "bg-green-100 text-green-800"
+                                        : contact.status === "pending"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {contact.status === "active"
+                                      ? "Active"
+                                      : contact.status === "pending"
+                                        ? "Pending"
+                                        : "Declined"}
+                                  </span>
+                                  <span className="ml-2">
+                                    Added{" "}
+                                    {contact.addedAt.toLocaleDateString(
+                                      "en-GB",
+                                      {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "numeric",
+                                      },
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {contact.status === "active" && (
+                                <Select>
+                                  <SelectTrigger className="w-[120px]">
+                                    <SelectValue placeholder="Actions" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {/* Options will be filled later */}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              {contact.status === "declined" && (
+                                <>
+                                  <Button variant="outline" size="sm">
+                                    Resend Invite
+                                  </Button>
+                                  <Button variant="destructive" size="sm">
+                                    Remove
+                                  </Button>
+                                </>
+                              )}
+                              {/* Pending contacts have no actions */}
+                            </div>
+                          </div>
+                        ))}
+                        {filteredContacts.length === 0 && (
+                          <div className="text-muted-foreground py-8 text-center">
+                            <Users className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+                            <p>No contacts yet.</p>
+                            <Button variant="link" className="mt-2">
+                              Add your first contact
+                            </Button>
                           </div>
                         )}
                       </div>
