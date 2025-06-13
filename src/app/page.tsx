@@ -73,6 +73,8 @@ export default function LandingPage() {
 
       if (response.ok) {
         setUser(null);
+        // Clear cached user data from sessionStorage
+        sessionStorage.removeItem("user");
         router.replace("/");
         router.refresh();
       }

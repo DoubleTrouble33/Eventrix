@@ -103,6 +103,8 @@ export default function RightSide() {
         method: "POST",
         credentials: "include",
       });
+      // Clear cached user data from sessionStorage
+      sessionStorage.removeItem("user");
       router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);

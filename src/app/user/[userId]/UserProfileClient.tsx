@@ -172,6 +172,8 @@ export default function UserProfileClient({
       });
 
       if (response.ok) {
+        // Clear cached user data from sessionStorage
+        sessionStorage.removeItem("user");
         router.replace("/");
         router.refresh();
       }
