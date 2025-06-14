@@ -17,12 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Bell, Shield } from "lucide-react";
+import { User, LogOut, Bell, Shield, Check, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 interface Invitation {
   id: string;
+  eventId: string;
   eventTitle: string;
   hostName: string;
   viewed: boolean;
@@ -146,6 +147,76 @@ export default function RightSide() {
     }
   };
 
+  const handleAcceptInvitation = async (
+    eventId: string,
+    invitationId: string,
+  ) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(`/api/users/${user.id}/invitations/accept`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ eventId }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to accept invitation");
+      }
+
+      // Remove the invitation from the list
+      setInvitations((current) =>
+        current.filter((inv) => inv.id !== invitationId),
+      );
+
+      // Update the unviewed count
+      setUnviewedCount((current) => Math.max(0, current - 1));
+
+      // Refresh the page to update the calendar events
+      window.location.reload();
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+    }
+  };
+
+  const handleDeclineInvitation = async (
+    eventId: string,
+    invitationId: string,
+  ) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(
+        `/api/users/${user.id}/invitations/decline`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ eventId }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to decline invitation");
+      }
+
+      // Remove the invitation from the list
+      setInvitations((current) =>
+        current.filter((inv) => inv.id !== invitationId),
+      );
+
+      // Update the unviewed count
+      setUnviewedCount((current) => Math.max(0, current - 1));
+    } catch (error) {
+      console.error("Error declining invitation:", error);
+    }
+  };
+
   return (
     <div className="flex items-center gap-4">
       <Select onValueChange={setView}>
@@ -175,14 +246,13 @@ export default function RightSide() {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className="w-80">
           {invitations.length > 0 ? (
             <>
               {invitations.map((invitation) => (
-                <DropdownMenuItem
+                <div
                   key={invitation.id}
-                  className="cursor-pointer"
-                  onClick={() => goToProfile(true)}
+                  className="flex flex-col gap-2 border-b p-3 last:border-b-0"
                 >
                   <div className="flex flex-col gap-1">
                     <p className="text-sm font-medium">
@@ -192,7 +262,39 @@ export default function RightSide() {
                       Invited by {invitation.hostName}
                     </p>
                   </div>
-                </DropdownMenuItem>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-8 flex-1 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAcceptInvitation(
+                          invitation.eventId,
+                          invitation.id,
+                        );
+                      }}
+                    >
+                      <Check className="mr-1 h-3 w-3" />
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeclineInvitation(
+                          invitation.eventId,
+                          invitation.id,
+                        );
+                      }}
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuItem
