@@ -37,6 +37,30 @@ export const users = pgTable("users", {
       { id: "work", name: "Work", color: "#10B981" },
       { id: "fitness", name: "Fitness", color: "#EF4444" },
     ]),
+  contacts: jsonb("contacts")
+    .$type<{
+      organized: {
+        [groupId: string]: {
+          name: string;
+          color: string;
+          memberIds: string[];
+        };
+      };
+      unorganized: {
+        [contactId: string]: {
+          email: string;
+          firstName: string;
+          lastName: string;
+          avatar: string;
+          status: "active" | "pending" | "declined";
+          addedAt: string; // ISO string for JSON compatibility
+        };
+      };
+    }>()
+    .default({
+      organized: {},
+      unorganized: {},
+    }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

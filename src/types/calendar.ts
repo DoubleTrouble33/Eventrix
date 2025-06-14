@@ -22,3 +22,27 @@ export interface CategoryType {
   name: string;
   color: string;
 }
+
+export interface ContactType {
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatar: string;
+  status: "active" | "pending" | "declined";
+  addedAt: string;
+}
+
+export interface ContactGroupType {
+  name: string;
+  color: string;
+  memberIds: string[];
+}
+
+export interface UserContactsType {
+  organized: {
+    [groupId: string]: ContactGroupType;
+  };
+  unorganized: {
+    [contactId: string]: ContactType;
+  };
+}

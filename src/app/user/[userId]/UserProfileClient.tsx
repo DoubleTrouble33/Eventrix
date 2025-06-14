@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -102,86 +102,16 @@ export default function UserProfileClient({
   >("all");
 
   // Group management state
-  const [groups, setGroups] = useState<ContactGroup[]>([
-    {
-      id: "1",
-      name: "WorkBuddies",
-      color: "#3B82F6",
-      memberIds: ["1", "2"],
-    },
-    {
-      id: "2",
-      name: "College Friends",
-      color: "#10B981",
-      memberIds: ["4"],
-    },
-  ]);
+  const [groups, setGroups] = useState<ContactGroup[]>([]);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("#3B82F6");
   const [activeTab, setActiveTab] = useState("events");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
-  // Dummy contacts data for UI demonstration
-  const [contacts] = useState<Contact[]>([
-    {
-      id: "1",
-      firstName: "John",
-      lastName: "Doe",
-      email: "john.doe@example.com",
-      avatar: "/img/avatar-demo.png",
-      status: "active",
-      addedAt: new Date("2024-01-15"),
-    },
-    {
-      id: "2",
-      firstName: "Jane",
-      lastName: "Smith",
-      email: "jane.smith@example.com",
-      avatar:
-        "/avatars/avatar-aec0cc4b-2077-4821-920a-b28403ed7799-1749145483983-722039292.jpeg",
-      status: "active",
-      addedAt: new Date("2024-02-10"),
-    },
-    {
-      id: "3",
-      firstName: "Mike",
-      lastName: "Johnson",
-      email: "mike.johnson@example.com",
-      avatar:
-        "/avatars/avatar-aec0cc4b-2077-4821-920a-b28403ed7799-1749145390867-883170595.jpeg",
-      status: "pending",
-      addedAt: new Date("2024-03-05"),
-    },
-    {
-      id: "4",
-      firstName: "Sarah",
-      lastName: "Wilson",
-      email: "sarah.wilson@example.com",
-      avatar: "/img/avatar-demo.png",
-      status: "active",
-      addedAt: new Date("2024-02-28"),
-    },
-    {
-      id: "5",
-      firstName: "Alex",
-      lastName: "Brown",
-      email: "alex.brown@example.com",
-      avatar: "/img/avatar-demo.png",
-      status: "declined",
-      addedAt: new Date("2024-01-20"),
-    },
-    {
-      id: "6",
-      firstName: "Emma",
-      lastName: "Davis",
-      email: "emma.davis@example.com",
-      avatar:
-        "/avatars/avatar-aec0cc4b-2077-4821-920a-b28403ed7799-1749145483983-722039292.jpeg",
-      status: "pending",
-      addedAt: new Date("2024-03-10"),
-    },
-  ]);
+  // Contacts data from database
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   // Filter events based on the selected filter
   const filteredEvents = (() => {
@@ -311,8 +241,119 @@ export default function UserProfileClient({
     setUserData((prev) => ({ ...prev, avatar: newAvatarUrl }));
   };
 
+  // Database functions
+  const loadContacts = async () => {
+    try {
+      setIsLoadingContacts(true);
+      const response = await fetch("/api/user/contacts", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch contacts");
+      }
+
+      const data = await response.json();
+      const contactsData = data.contacts || { organized: {}, unorganized: {} };
+
+      // Convert unorganized contacts to Contact array
+      const contactsArray: Contact[] = Object.entries(
+        contactsData.unorganized || {},
+      ).map(([id, contact]: [string, any]) => ({
+        id,
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email,
+        avatar: contact.avatar,
+        status: contact.status,
+        addedAt: new Date(contact.addedAt),
+      }));
+
+      // Convert organized groups to ContactGroup array
+      const groupsArray: ContactGroup[] = Object.entries(
+        contactsData.organized || {},
+      ).map(([id, group]: [string, any]) => ({
+        id,
+        name: group.name,
+        color: group.color,
+        memberIds: group.memberIds,
+      }));
+
+      setContacts(contactsArray);
+      setGroups(groupsArray);
+    } catch (error) {
+      console.error("Error loading contacts:", error);
+    } finally {
+      setIsLoadingContacts(false);
+    }
+  };
+
+  const saveContacts = async (
+    updatedGroups?: ContactGroup[],
+    updatedContacts?: Contact[],
+  ) => {
+    try {
+      const currentContacts = updatedContacts || contacts;
+      const currentGroups = updatedGroups || groups;
+
+      // Convert contacts array back to database format
+      const unorganized: { [key: string]: any } = {};
+      currentContacts.forEach((contact) => {
+        unorganized[contact.id] = {
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+          email: contact.email,
+          avatar: contact.avatar,
+          status: contact.status,
+          addedAt: contact.addedAt.toISOString(),
+        };
+      });
+
+      // Convert groups array back to database format
+      const organized: { [key: string]: any } = {};
+      currentGroups.forEach((group) => {
+        organized[group.id] = {
+          name: group.name,
+          color: group.color,
+          memberIds: group.memberIds,
+        };
+      });
+
+      console.log("Saving contacts to database:", { organized, unorganized });
+
+      const response = await fetch("/api/user/contacts", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contacts: {
+            organized,
+            unorganized,
+          },
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("Save failed:", errorData);
+        throw new Error("Failed to save contacts");
+      }
+
+      console.log("Successfully saved contacts to database");
+    } catch (error) {
+      console.error("Error saving contacts:", error);
+    }
+  };
+
+  // Load contacts on component mount
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
   // Group management functions
-  const handleAddGroup = () => {
+  const handleAddGroup = async () => {
     if (newGroupName.trim()) {
       const newGroup: ContactGroup = {
         id: Math.random().toString(36).substr(2, 9),
@@ -320,32 +361,39 @@ export default function UserProfileClient({
         color: newGroupColor,
         memberIds: [],
       };
-      setGroups([...groups, newGroup]);
+      const updatedGroups = [...groups, newGroup];
+      setGroups(updatedGroups);
       setNewGroupName("");
       setNewGroupColor("#3B82F6");
       setIsAddingGroup(false);
+
+      // Save to database with updated groups
+      await saveContacts(updatedGroups, contacts);
     }
   };
 
-  const handleAddToGroup = (contactId: string, groupId: string) => {
-    setGroups(
-      groups.map((group) => {
-        if (group.id === groupId) {
-          const isAlreadyInGroup = group.memberIds.includes(contactId);
-          if (isAlreadyInGroup) {
-            // Remove from group
-            return {
-              ...group,
-              memberIds: group.memberIds.filter((id) => id !== contactId),
-            };
-          } else {
-            // Add to group
-            return { ...group, memberIds: [...group.memberIds, contactId] };
-          }
+  const handleAddToGroup = async (contactId: string, groupId: string) => {
+    const updatedGroups = groups.map((group) => {
+      if (group.id === groupId) {
+        const isAlreadyInGroup = group.memberIds.includes(contactId);
+        if (isAlreadyInGroup) {
+          // Remove from group
+          return {
+            ...group,
+            memberIds: group.memberIds.filter((id) => id !== contactId),
+          };
+        } else {
+          // Add to group
+          return { ...group, memberIds: [...group.memberIds, contactId] };
         }
-        return group;
-      }),
-    );
+      }
+      return group;
+    });
+
+    setGroups(updatedGroups);
+
+    // Save to database with updated groups
+    await saveContacts(updatedGroups, contacts);
   };
 
   return (
@@ -842,141 +890,149 @@ export default function UserProfileClient({
                   <CardContent>
                     <ScrollArea className="h-[400px]">
                       <div className="space-y-4">
-                        {filteredContacts.map((contact) => (
-                          <div
-                            key={contact.id}
-                            className="flex items-center justify-between rounded-lg border p-4"
-                          >
-                            <div className="flex items-center space-x-4">
-                              <div className="relative">
-                                <Image
-                                  src={contact.avatar}
-                                  alt={`${contact.firstName} ${contact.lastName}`}
-                                  width={48}
-                                  height={48}
-                                  className="rounded-full object-cover"
-                                />
-                                <div
-                                  className={`absolute -right-1 -bottom-1 h-4 w-4 rounded-full border-2 border-white ${
-                                    contact.status === "active"
-                                      ? "bg-green-500"
-                                      : contact.status === "pending"
-                                        ? "bg-yellow-500"
-                                        : "bg-red-500"
-                                  }`}
-                                />
-                              </div>
-                              <div>
-                                <h3 className="font-medium">
-                                  {contact.firstName} {contact.lastName}
-                                </h3>
-                                <p className="text-muted-foreground text-sm">
-                                  {contact.email}
-                                </p>
-                                <div className="text-muted-foreground mt-1 flex items-center text-xs">
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        {isLoadingContacts ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                            <span className="ml-2">Loading contacts...</span>
+                          </div>
+                        ) : (
+                          filteredContacts.map((contact) => (
+                            <div
+                              key={contact.id}
+                              className="flex items-center justify-between rounded-lg border p-4"
+                            >
+                              <div className="flex items-center space-x-4">
+                                <div className="relative">
+                                  <Image
+                                    src={contact.avatar}
+                                    alt={`${contact.firstName} ${contact.lastName}`}
+                                    width={48}
+                                    height={48}
+                                    className="rounded-full object-cover"
+                                  />
+                                  <div
+                                    className={`absolute -right-1 -bottom-1 h-4 w-4 rounded-full border-2 border-white ${
                                       contact.status === "active"
-                                        ? "bg-green-100 text-green-800"
+                                        ? "bg-green-500"
                                         : contact.status === "pending"
-                                          ? "bg-yellow-100 text-yellow-800"
-                                          : "bg-red-100 text-red-800"
+                                          ? "bg-yellow-500"
+                                          : "bg-red-500"
                                     }`}
-                                  >
-                                    {contact.status === "active"
-                                      ? "Active"
-                                      : contact.status === "pending"
-                                        ? "Pending"
-                                        : "Declined"}
-                                  </span>
-                                  <span className="ml-2">
-                                    Added{" "}
-                                    {contact.addedAt.toLocaleDateString(
-                                      "en-GB",
-                                      {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "numeric",
-                                      },
-                                    )}
-                                  </span>
+                                  />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium">
+                                    {contact.firstName} {contact.lastName}
+                                  </h3>
+                                  <p className="text-muted-foreground text-sm">
+                                    {contact.email}
+                                  </p>
+                                  <div className="text-muted-foreground mt-1 flex items-center text-xs">
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                        contact.status === "active"
+                                          ? "bg-green-100 text-green-800"
+                                          : contact.status === "pending"
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : "bg-red-100 text-red-800"
+                                      }`}
+                                    >
+                                      {contact.status === "active"
+                                        ? "Active"
+                                        : contact.status === "pending"
+                                          ? "Pending"
+                                          : "Declined"}
+                                    </span>
+                                    <span className="ml-2">
+                                      Added{" "}
+                                      {contact.addedAt.toLocaleDateString(
+                                        "en-GB",
+                                        {
+                                          year: "numeric",
+                                          month: "short",
+                                          day: "numeric",
+                                        },
+                                      )}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {contact.status === "active" && (
-                                <Select
-                                  value="" // Always reset to empty to show placeholder
-                                  onValueChange={(value) => {
-                                    if (value.startsWith("group-")) {
-                                      const groupId = value.replace(
-                                        "group-",
-                                        "",
-                                      );
-                                      handleAddToGroup(contact.id, groupId);
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="w-[140px]">
-                                    <SelectValue placeholder="Manage Groups" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {groups.map((group) => {
-                                      const isInGroup =
-                                        group.memberIds.includes(contact.id);
-                                      return (
-                                        <SelectItem
-                                          key={group.id}
-                                          value={`group-${group.id}`}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <div
-                                              className="h-2 w-2 rounded-full"
-                                              style={{
-                                                backgroundColor: group.color,
-                                              }}
-                                            />
-                                            <span>
-                                              {isInGroup
-                                                ? "Remove from"
-                                                : "Add to"}{" "}
-                                              {group.name}
-                                            </span>
-                                          </div>
+                              <div className="flex items-center space-x-2">
+                                {contact.status === "active" && (
+                                  <Select
+                                    value="" // Always reset to empty to show placeholder
+                                    onValueChange={(value) => {
+                                      if (value.startsWith("group-")) {
+                                        const groupId = value.replace(
+                                          "group-",
+                                          "",
+                                        );
+                                        handleAddToGroup(contact.id, groupId);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-[140px]">
+                                      <SelectValue placeholder="Manage Groups" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {groups.map((group) => {
+                                        const isInGroup =
+                                          group.memberIds.includes(contact.id);
+                                        return (
+                                          <SelectItem
+                                            key={group.id}
+                                            value={`group-${group.id}`}
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <div
+                                                className="h-2 w-2 rounded-full"
+                                                style={{
+                                                  backgroundColor: group.color,
+                                                }}
+                                              />
+                                              <span>
+                                                {isInGroup
+                                                  ? "Remove from"
+                                                  : "Add to"}{" "}
+                                                {group.name}
+                                              </span>
+                                            </div>
+                                          </SelectItem>
+                                        );
+                                      })}
+                                      {groups.length === 0 && (
+                                        <SelectItem value="no-groups" disabled>
+                                          No groups available
                                         </SelectItem>
-                                      );
-                                    })}
-                                    {groups.length === 0 && (
-                                      <SelectItem value="no-groups" disabled>
-                                        No groups available
-                                      </SelectItem>
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                              {contact.status === "declined" && (
-                                <>
-                                  <Button variant="outline" size="sm">
-                                    Resend Invite
-                                  </Button>
-                                  <Button variant="destructive" size="sm">
-                                    Remove
-                                  </Button>
-                                </>
-                              )}
-                              {/* Pending contacts have no actions */}
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                                {contact.status === "declined" && (
+                                  <>
+                                    <Button variant="outline" size="sm">
+                                      Resend Invite
+                                    </Button>
+                                    <Button variant="destructive" size="sm">
+                                      Remove
+                                    </Button>
+                                  </>
+                                )}
+                                {/* Pending contacts have no actions */}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                        {filteredContacts.length === 0 && (
-                          <div className="text-muted-foreground py-8 text-center">
-                            <Users className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
-                            <p>No contacts yet.</p>
-                            <Button variant="link" className="mt-2">
-                              Add your first contact
-                            </Button>
-                          </div>
+                          ))
                         )}
+                        {!isLoadingContacts &&
+                          filteredContacts.length === 0 && (
+                            <div className="text-muted-foreground py-8 text-center">
+                              <Users className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+                              <p>No contacts yet.</p>
+                              <Button variant="link" className="mt-2">
+                                Add your first contact
+                              </Button>
+                            </div>
+                          )}
                       </div>
                     </ScrollArea>
                   </CardContent>
