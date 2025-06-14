@@ -29,6 +29,18 @@ interface Invitation {
   viewed: boolean;
 }
 
+interface ContactRequest {
+  id: string;
+  type: "contact_request";
+  fromUserId: string;
+  fromUserName: string;
+  fromUserEmail: string;
+  fromUserAvatar: string;
+  message: string;
+  createdAt: string;
+  viewed: boolean;
+}
+
 export default function RightSide() {
   const { setView } = useViewStore();
   const router = useRouter();
@@ -41,6 +53,7 @@ export default function RightSide() {
   } | null>(null);
   const [unviewedCount, setUnviewedCount] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -61,9 +74,9 @@ export default function RightSide() {
     fetchUser();
   }, []);
 
-  // Fetch invitations count and preview
+  // Fetch invitations and contact requests count and preview
   useEffect(() => {
-    const fetchInvitations = async () => {
+    const fetchNotifications = async () => {
       if (!user) return;
 
       try {
@@ -75,7 +88,23 @@ export default function RightSide() {
           },
         );
         const countData = await countResponse.json();
-        setUnviewedCount(countData.count);
+
+        // Fetch contact requests
+        const contactRequestsResponse = await fetch(
+          `/api/users/${user.id}/notifications/contact-requests`,
+          {
+            credentials: "include",
+          },
+        );
+        const contactRequestsData = await contactRequestsResponse.json();
+
+        // Calculate total unviewed count
+        const totalUnviewedCount =
+          countData.count +
+          (contactRequestsData.contactRequests?.filter(
+            (req: ContactRequest) => !req.viewed,
+          ).length || 0);
+        setUnviewedCount(totalUnviewedCount);
 
         // Fetch preview of invitations
         const previewResponse = await fetch(
@@ -86,14 +115,15 @@ export default function RightSide() {
         );
         const previewData = await previewResponse.json();
         setInvitations(previewData.invitations);
+        setContactRequests(contactRequestsData.contactRequests || []);
       } catch (error) {
-        console.error("Error fetching invitations:", error);
+        console.error("Error fetching notifications:", error);
       }
     };
 
     // Fetch initially and then every minute
-    fetchInvitations();
-    const interval = setInterval(fetchInvitations, 60000);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
 
     return () => clearInterval(interval);
   }, [user]);
@@ -217,6 +247,70 @@ export default function RightSide() {
     }
   };
 
+  const handleAcceptContactRequest = async (notificationId: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(
+        `/api/users/${user.id}/notifications/contact-requests/accept`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notificationId }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to accept contact request");
+      }
+
+      // Remove the contact request from the list
+      setContactRequests((current) =>
+        current.filter((req) => req.id !== notificationId),
+      );
+
+      // Update the unviewed count
+      setUnviewedCount((current) => Math.max(0, current - 1));
+    } catch (error) {
+      console.error("Error accepting contact request:", error);
+    }
+  };
+
+  const handleDeclineContactRequest = async (notificationId: string) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(
+        `/api/users/${user.id}/notifications/contact-requests/decline`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notificationId }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to decline contact request");
+      }
+
+      // Remove the contact request from the list
+      setContactRequests((current) =>
+        current.filter((req) => req.id !== notificationId),
+      );
+
+      // Update the unviewed count
+      setUnviewedCount((current) => Math.max(0, current - 1));
+    } catch (error) {
+      console.error("Error declining contact request:", error);
+    }
+  };
+
   return (
     <div className="flex items-center gap-4">
       <Select onValueChange={setView}>
@@ -247,8 +341,50 @@ export default function RightSide() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
-          {invitations.length > 0 ? (
+          {invitations.length > 0 || contactRequests.length > 0 ? (
             <>
+              {/* Contact Requests */}
+              {contactRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex flex-col gap-2 border-b p-3 last:border-b-0"
+                >
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium">Contact Request</p>
+                    <p className="text-muted-foreground text-xs">
+                      {request.fromUserName} wants to connect with you
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-8 flex-1 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAcceptContactRequest(request.id);
+                      }}
+                    >
+                      <Check className="mr-1 h-3 w-3" />
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeclineContactRequest(request.id);
+                      }}
+                    >
+                      <X className="mr-1 h-3 w-3" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Event Invitations */}
               {invitations.map((invitation) => (
                 <div
                   key={invitation.id}

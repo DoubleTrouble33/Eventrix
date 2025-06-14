@@ -26,6 +26,7 @@ import {
 import { useRouter } from "next/navigation";
 import { EventDetails } from "@/components/ui/event-details";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
+import { ContactHoverCard } from "@/components/ui/contact-hover-card";
 import {
   Select,
   SelectContent,
@@ -394,6 +395,54 @@ export default function UserProfileClient({
 
     // Save to database with updated groups
     await saveContacts(updatedGroups, contacts);
+  };
+
+  const handleRemoveContact = async (contactId: string) => {
+    try {
+      // Find the contact to get their email
+      const contactToRemove = contacts.find(
+        (contact) => contact.id === contactId,
+      );
+      if (!contactToRemove) {
+        console.error("Contact not found");
+        return;
+      }
+
+      // Call the mutual removal API
+      const response = await fetch("/api/user/contacts/remove", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contactEmail: contactToRemove.email,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to remove contact");
+      }
+
+      // Remove contact from local state
+      const updatedContacts = contacts.filter(
+        (contact) => contact.id !== contactId,
+      );
+
+      // Also remove from any groups they might be in
+      const updatedGroups = groups.map((group) => ({
+        ...group,
+        memberIds: group.memberIds.filter((id) => id !== contactId),
+      }));
+
+      setContacts(updatedContacts);
+      setGroups(updatedGroups);
+
+      console.log("✅ Contact removed from both users successfully");
+    } catch (error) {
+      console.error("Error removing contact:", error);
+    }
   };
 
   return (
@@ -921,9 +970,14 @@ export default function UserProfileClient({
                                   />
                                 </div>
                                 <div>
-                                  <h3 className="font-medium">
-                                    {contact.firstName} {contact.lastName}
-                                  </h3>
+                                  <ContactHoverCard
+                                    contact={contact}
+                                    onRemove={handleRemoveContact}
+                                  >
+                                    <h3 className="font-medium">
+                                      {contact.firstName} {contact.lastName}
+                                    </h3>
+                                  </ContactHoverCard>
                                   <p className="text-muted-foreground text-sm">
                                     {contact.email}
                                   </p>
@@ -1008,17 +1062,33 @@ export default function UserProfileClient({
                                     </SelectContent>
                                   </Select>
                                 )}
+                                {contact.status === "pending" && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRemoveContact(contact.id)
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                )}
                                 {contact.status === "declined" && (
                                   <>
                                     <Button variant="outline" size="sm">
                                       Resend Invite
                                     </Button>
-                                    <Button variant="destructive" size="sm">
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleRemoveContact(contact.id)
+                                      }
+                                    >
                                       Remove
                                     </Button>
                                   </>
                                 )}
-                                {/* Pending contacts have no actions */}
                               </div>
                             </div>
                           ))

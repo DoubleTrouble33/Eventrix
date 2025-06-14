@@ -40,76 +40,38 @@ export function ParticipantHoverCard({
 
     setIsAdding(true);
     try {
-      // Get current contacts
-      const contactsResponse = await fetch("/api/user/contacts", {
-        credentials: "include",
-      });
-
-      if (!contactsResponse.ok) {
-        throw new Error("Failed to get contacts");
-      }
-
-      const contactsData = await contactsResponse.json();
-      const currentContacts = contactsData.contacts || {
-        organized: {},
-        unorganized: {},
-      };
-
-      // Check if contact already exists
-      const existingContact = Object.values(
-        currentContacts.unorganized || {},
-      ).find(
-        (contact) => (contact as { email: string }).email === participant.email,
-      );
-
-      if (existingContact) {
-        setIsAdded(true);
-        return;
-      }
-
-      // Generate a unique ID for the new contact
-      const contactId = `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Split the participant name into first and last name
-      const nameParts = participant.name.trim().split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      // Add new contact to unorganized contacts
-      const newContact = {
-        firstName,
-        lastName,
-        email: participant.email,
-        avatar: `/avatars/avatar-${Math.floor(Math.random() * 10) + 1}.png`,
-        status: "pending" as const,
-        addedAt: new Date().toISOString(),
-      };
-
-      const updatedContacts = {
-        ...currentContacts,
-        unorganized: {
-          ...currentContacts.unorganized,
-          [contactId]: newContact,
-        },
-      };
-
-      // Save updated contacts
-      const saveResponse = await fetch("/api/user/contacts", {
-        method: "PUT",
+      const response = await fetch("/api/user/contacts/add", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contacts: updatedContacts,
+          targetEmail: participant.email,
+          targetName: participant.name,
         }),
         credentials: "include",
       });
 
-      if (!saveResponse.ok) {
-        throw new Error("Failed to save contact");
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.message === "Contact already exists") {
+          setIsAdded(true);
+          return;
+        }
+        throw new Error(data.error || "Failed to add contact");
       }
 
       setIsAdded(true);
+
+      // Show different messages based on the response
+      if (data.mutual) {
+        console.log(
+          "🎉 Mutual contact detected! Both contacts are now active.",
+        );
+      } else {
+        console.log("📤 Contact added successfully");
+      }
     } catch (error) {
       console.error("Error adding contact:", error);
     } finally {

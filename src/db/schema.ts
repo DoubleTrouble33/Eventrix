@@ -61,6 +61,24 @@ export const users = pgTable("users", {
       organized: {},
       unorganized: {},
     }),
+  notifications: jsonb("notifications")
+    .$type<
+      {
+        id: string;
+        type: "contact_request" | "event_invitation";
+        fromUserId?: string;
+        fromUserName?: string;
+        fromUserEmail?: string;
+        fromUserAvatar?: string;
+        eventId?: string;
+        eventTitle?: string;
+        hostName?: string;
+        message: string;
+        createdAt: string;
+        viewed: boolean;
+      }[]
+    >()
+    .default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
