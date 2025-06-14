@@ -108,6 +108,16 @@ export default function DayView() {
               ).filter((event) => {
                 const eventHour = dayjs(event.startTime).hour();
                 const hourMatch = eventHour === hour.hour();
+
+                // Always show events with deleted calendars (orphaned events)
+                const { calendars } = useCalendarStore.getState();
+                const calendarExists = calendars.some(
+                  (cal) => cal.id === event.categoryId,
+                );
+                if (!calendarExists) {
+                  return hourMatch; // Show orphaned events if hour matches
+                }
+
                 const calendarMatch =
                   selectedCalendars.length > 0 &&
                   selectedCalendars.includes(event.categoryId);

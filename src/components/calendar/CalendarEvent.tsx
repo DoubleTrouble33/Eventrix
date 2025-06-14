@@ -15,6 +15,10 @@ export function CalendarEvent({ event }: CalendarEventProps) {
 
   const calendar = calendars.find((c) => c.id === event.categoryId);
 
+  // Fallback styling for events with deleted calendars
+  const fallbackColor = "#6B7280"; // Gray color for orphaned events
+  const eventColor = calendar?.color || fallbackColor;
+
   const handleClick = () => {
     setSelectedEvent(event);
     setIsEventSummaryOpen(true);
@@ -25,8 +29,8 @@ export function CalendarEvent({ event }: CalendarEventProps) {
       onClick={handleClick}
       className="w-full truncate rounded px-1 py-0.5 text-left text-xs hover:bg-gray-100"
       style={{
-        backgroundColor: calendar?.color + "20", // Add 20% opacity
-        borderLeft: `3px solid ${calendar?.color}`,
+        backgroundColor: eventColor + "20", // Add 20% opacity
+        borderLeft: `3px solid ${eventColor}`,
       }}
     >
       <div className="truncate font-medium">{event.title}</div>
@@ -34,6 +38,11 @@ export function CalendarEvent({ event }: CalendarEventProps) {
         {dayjs(event.startTime).format("h:mm A")} -{" "}
         {dayjs(event.endTime).format("h:mm A")}
       </div>
+      {!calendar && (
+        <div className="truncate text-xs text-gray-400 italic">
+          (Deleted calendar)
+        </div>
+      )}
     </button>
   );
 }

@@ -23,7 +23,7 @@ export async function POST(
       );
     }
 
-    // Verify that the event exists and belongs to the user
+    // Verify that the event exists
     const event = await db
       .select()
       .from(events)
@@ -34,7 +34,27 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    if (event[0].userId !== session.user.id) {
+    // Check if user is the event creator OR an accepted participant
+    const isCreator = event[0].userId === session.user.id;
+
+    let isAcceptedParticipant = false;
+    if (!isCreator) {
+      // Check if user is an accepted participant
+      const userAsGuest = await db
+        .select()
+        .from(eventGuests)
+        .where(eq(eventGuests.eventId, params.eventId))
+        .limit(100); // Get all guests to check
+
+      // Find current user in guest list and check if they're accepted
+      const currentUserGuest = userAsGuest.find(
+        (guest) => guest.email === session.user?.email && guest.isAccepted,
+      );
+
+      isAcceptedParticipant = !!currentUserGuest;
+    }
+
+    if (!isCreator && !isAcceptedParticipant) {
       return NextResponse.json(
         { error: "Not authorized to modify this event" },
         { status: 403 },
@@ -81,7 +101,38 @@ export async function GET(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Get all guests for the event
+    // Check if user is the event creator OR an accepted participant
+    const isCreator = event[0].userId === session.user.id;
+
+    let isAcceptedParticipant = false;
+    if (!isCreator) {
+      // Get all guests for the event
+      const allGuests = await db
+        .select()
+        .from(eventGuests)
+        .where(eq(eventGuests.eventId, params.eventId));
+
+      // Find current user in guest list and check if they're accepted
+      const currentUserGuest = allGuests.find(
+        (guest) => guest.email === session.user?.email && guest.isAccepted,
+      );
+
+      isAcceptedParticipant = !!currentUserGuest;
+
+      if (isAcceptedParticipant) {
+        // Return the guests we already fetched
+        return NextResponse.json({ guests: allGuests });
+      }
+    }
+
+    if (!isCreator && !isAcceptedParticipant) {
+      return NextResponse.json(
+        { error: "Not authorized to view this event's guests" },
+        { status: 403 },
+      );
+    }
+
+    // Get all guests for the event (for creators)
     const guests = await db
       .select()
       .from(eventGuests)

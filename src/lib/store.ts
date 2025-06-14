@@ -314,8 +314,24 @@ export const useCalendarStore = create<CalendarStore>()(
           return { selectedCalendars: newSelectedCalendars };
         }),
       addCalendar: async (calendar) => {
+        // Generate a meaningful ID based on the calendar name
+        const baseId = calendar.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "") // Remove non-alphanumeric characters
+          .substring(0, 20); // Limit length
+
+        // Check if this ID already exists and add a suffix if needed
+        const existingCalendars = useCalendarStore.getState().calendars;
+        let finalId = baseId;
+        let counter = 1;
+
+        while (existingCalendars.some((cal) => cal.id === finalId)) {
+          finalId = `${baseId}${counter}`;
+          counter++;
+        }
+
         const newCalendar = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: finalId,
           name: calendar.name,
           color: calendar.color,
         };
@@ -351,6 +367,22 @@ export const useCalendarStore = create<CalendarStore>()(
         }
       },
       deleteCalendar: async (calendarId) => {
+        // Check if there are events using this calendar
+        const currentEvents = useEventStore.getState().events;
+        const eventsUsingCalendar = currentEvents.filter(
+          (event) => event.categoryId === calendarId,
+        );
+
+        if (eventsUsingCalendar.length > 0) {
+          const confirmDelete = window.confirm(
+            `This calendar has ${eventsUsingCalendar.length} event(s). Deleting it will make these events appear as "Deleted Calendar". Are you sure you want to continue?`,
+          );
+
+          if (!confirmDelete) {
+            return; // User cancelled deletion
+          }
+        }
+
         // Optimistically update the UI
         set((state) => ({
           calendars: state.calendars.filter((cal) => cal.id !== calendarId),

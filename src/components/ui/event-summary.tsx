@@ -14,6 +14,7 @@ import {
   Search,
   Plus,
 } from "lucide-react";
+import { ParticipantHoverCard } from "./participant-hover-card";
 import dayjs from "dayjs";
 import { useState, useEffect } from "react";
 import { Input } from "./input";
@@ -34,6 +35,7 @@ export function EventSummary() {
     firstName: string;
     lastName: string;
     avatar: string;
+    email: string;
   } | null>(null);
   const [participants, setParticipants] = useState<
     Array<{
@@ -59,6 +61,7 @@ export function EventSummary() {
     firstName: string;
     lastName: string;
     avatar: string;
+    email: string;
   } | null>(null);
 
   // Fetch current user data
@@ -91,6 +94,7 @@ export function EventSummary() {
             firstName: currentUser.firstName,
             lastName: currentUser.lastName,
             avatar: currentUser.avatar,
+            email: currentUser.email,
           });
         } else {
           // Only fetch creator data if it's a different user
@@ -242,6 +246,14 @@ export function EventSummary() {
 
   const calendar = calendars.find((c) => c.id === selectedEvent.categoryId);
 
+  // Fallback for events with deleted calendars
+  const fallbackCalendar = {
+    id: selectedEvent.categoryId,
+    name: "Deleted Calendar",
+    color: "#6B7280",
+  };
+  const displayCalendar = calendar || fallbackCalendar;
+
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/events?id=${selectedEvent.id}`, {
@@ -314,9 +326,18 @@ export function EventSummary() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <span className="text-sm text-gray-600">
-                    Created by {creator.firstName} {creator.lastName}
-                  </span>
+                  <ParticipantHoverCard
+                    participant={{
+                      name: `${creator.firstName} ${creator.lastName}`,
+                      email: creator.email,
+                      isAccepted: true,
+                    }}
+                    currentUserEmail={currentUser?.email}
+                  >
+                    <span className="cursor-pointer text-sm text-gray-600 transition-colors hover:text-blue-600">
+                      Created by {creator.firstName} {creator.lastName}
+                    </span>
+                  </ParticipantHoverCard>
                 </div>
                 <span className="text-sm text-gray-400">•</span>
                 <span className="text-sm text-gray-600">
@@ -325,21 +346,22 @@ export function EventSummary() {
               </div>
             )}
 
-            {calendar && (
-              <div className="mt-2 flex items-center gap-2">
-                <Tag className="h-4 w-4 text-gray-500" />
+            <div className="mt-2 flex items-center gap-2">
+              <Tag className="h-4 w-4 text-gray-500" />
+              <div
+                className="flex items-center gap-2 rounded-full px-2 py-0.5 text-sm"
+                style={{ backgroundColor: `${displayCalendar.color}20` }}
+              >
                 <div
-                  className="flex items-center gap-2 rounded-full px-2 py-0.5 text-sm"
-                  style={{ backgroundColor: `${calendar.color}20` }}
-                >
-                  <div
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: calendar.color }}
-                  />
-                  <span style={{ color: calendar.color }}>{calendar.name}</span>
-                </div>
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: displayCalendar.color }}
+                />
+                <span style={{ color: displayCalendar.color }}>
+                  {displayCalendar.name}
+                  {!calendar && " (Deleted)"}
+                </span>
               </div>
-            )}
+            </div>
 
             <p className="mt-2 text-sm text-gray-500">
               {selectedEvent.isRepeating ? (
@@ -450,12 +472,19 @@ export function EventSummary() {
                       key={participant.email}
                       className="flex items-center justify-between rounded-md bg-white p-2 shadow-sm"
                     >
-                      <div>
-                        <div className="font-medium">{participant.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {participant.email}
+                      <ParticipantHoverCard
+                        participant={participant}
+                        currentUserEmail={currentUser?.email}
+                      >
+                        <div>
+                          <div className="font-medium transition-colors hover:text-blue-600">
+                            {participant.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {participant.email}
+                          </div>
                         </div>
-                      </div>
+                      </ParticipantHoverCard>
                       <div
                         className={`rounded-full px-2 py-0.5 text-xs ${
                           participant.isAccepted

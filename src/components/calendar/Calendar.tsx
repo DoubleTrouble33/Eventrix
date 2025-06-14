@@ -1,6 +1,6 @@
 "use client";
 
-import { useEventStore, useCategoryStore } from "@/lib/store";
+import { useEventStore, useCalendarStore } from "@/lib/store";
 import { CalendarEvent } from "./CalendarEvent";
 import { EventPopover } from "../ui/event-popover";
 import { useState } from "react";
@@ -12,13 +12,19 @@ interface CalendarProps {
 
 export function Calendar({ currentDate }: CalendarProps) {
   const { events } = useEventStore();
-  const { selectedCategories } = useCategoryStore();
+  const { selectedCalendars, calendars } = useCalendarStore();
   const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs | null>(null);
 
-  // Filter events based on selected categories
-  const filteredEvents = events.filter((event) =>
-    selectedCategories.includes(event.categoryId),
-  );
+  // Filter events based on selected calendars
+  const filteredEvents = events.filter((event) => {
+    // Always show events with deleted calendars (orphaned events)
+    const calendarExists = calendars.some((cal) => cal.id === event.categoryId);
+    if (!calendarExists) {
+      return true; // Show orphaned events
+    }
+    // For existing calendars, check if they're selected
+    return selectedCalendars.includes(event.categoryId);
+  });
 
   // Generate calendar grid
   const firstDayOfMonth = currentDate.startOf("month");
@@ -39,7 +45,7 @@ export function Calendar({ currentDate }: CalendarProps) {
   // Group events by date
   const eventsByDate = filteredEvents.reduce(
     (acc, event) => {
-      const date = event.date.format("YYYY-MM-DD");
+      const date = dayjs(event.startTime).format("YYYY-MM-DD");
       if (!acc[date]) {
         acc[date] = [];
       }
