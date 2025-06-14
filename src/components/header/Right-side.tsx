@@ -121,9 +121,9 @@ export default function RightSide() {
       }
     };
 
-    // Fetch initially and then every minute
+    // Fetch initially and then every 10 seconds for faster updates
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(fetchNotifications, 10000);
 
     return () => clearInterval(interval);
   }, [user]);

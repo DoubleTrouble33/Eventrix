@@ -70,8 +70,13 @@ export function ParticipantHoverCard({
           "🎉 Mutual contact detected! Both contacts are now active.",
         );
       } else {
-        console.log("📤 Contact added successfully");
+        console.log("📤 Contact request sent successfully");
       }
+
+      // Refresh the page after a short delay to show the updated contact list
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error("Error adding contact:", error);
     } finally {
@@ -121,7 +126,7 @@ export function ParticipantHoverCard({
             {isAdded ? (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <Check className="h-4 w-4" />
-                Added to contacts
+                Contact request sent!
               </div>
             ) : (
               <Button
@@ -132,7 +137,7 @@ export function ParticipantHoverCard({
                 className="flex items-center gap-2"
               >
                 <UserPlus className="h-4 w-4" />
-                {isAdding ? "Adding..." : "Add to Contacts"}
+                {isAdding ? "Sending..." : "Add to Contacts"}
               </Button>
             )}
           </div>
