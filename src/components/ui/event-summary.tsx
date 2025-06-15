@@ -148,13 +148,28 @@ export function EventSummary() {
         if (response.ok) {
           const data = await response.json();
           // Filter out already selected participants
+          // The API returns the array directly, not wrapped in a users property
+          const users = Array.isArray(data) ? data : [];
           setSearchResults(
-            data.users.filter(
-              (user: { id: string; email: string; name: string }) =>
-                !participants.some(
-                  (participant) => participant.email === user.email,
-                ),
-            ),
+            users
+              .map(
+                (user: {
+                  id: string;
+                  email: string;
+                  firstName: string;
+                  lastName: string;
+                }) => ({
+                  id: user.id,
+                  email: user.email,
+                  name: `${user.firstName} ${user.lastName}`,
+                }),
+              )
+              .filter(
+                (user: { id: string; email: string; name: string }) =>
+                  !participants.some(
+                    (participant) => participant.email === user.email,
+                  ),
+              ),
           );
         }
       } catch (error) {
@@ -175,6 +190,9 @@ export function EventSummary() {
     if (!selectedEvent) return;
 
     try {
+      console.log("Adding participant:", user);
+      console.log("Event ID:", selectedEvent.id);
+
       const response = await fetch(`/api/events/${selectedEvent.id}/guests`, {
         method: "POST",
         headers: {
@@ -187,11 +205,18 @@ export function EventSummary() {
         }),
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Failed to add participant");
+        const errorData = await response.json();
+        console.error("API Error:", errorData);
+        throw new Error(
+          `Failed to add participant: ${errorData.error || "Unknown error"}`,
+        );
       }
 
       const data = await response.json();
+      console.log("Success data:", data);
       setParticipants([...participants, data.guest]);
       setSearchQuery("");
       setIsAddingParticipant(false);

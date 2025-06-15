@@ -22,8 +22,12 @@ import {
   LayoutDashboard,
   Loader2,
   Users,
+  UserPlus,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EventDetails } from "@/components/ui/event-details";
 import { AvatarUpload } from "@/components/ui/avatar-upload";
 import { ContactHoverCard } from "@/components/ui/contact-hover-card";
@@ -34,6 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface User {
   id: string;
@@ -77,6 +87,21 @@ interface ContactGroup {
   memberIds: string[];
 }
 
+interface ContactData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string;
+  status: string;
+  addedAt: string;
+}
+
+interface GroupData {
+  name: string;
+  color: string;
+  memberIds: string[];
+}
+
 interface UserProfileClientProps {
   user: User;
   events: Event[];
@@ -89,6 +114,20 @@ export default function UserProfileClient({
   invitations: initialInvitations,
 }: UserProfileClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get initial tab from URL query parameter
+  const getInitialTab = () => {
+    const tabParam = searchParams.get("tab");
+    if (
+      tabParam &&
+      ["events", "notifications", "contacts", "invite"].includes(tabParam)
+    ) {
+      return tabParam;
+    }
+    return "events";
+  };
+
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState(user);
   const [isAddingEvent, setIsAddingEvent] = useState<string | null>(null);
@@ -107,12 +146,21 @@ export default function UserProfileClient({
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupColor, setNewGroupColor] = useState("#3B82F6");
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupColor, setEditGroupColor] = useState("#3B82F6");
 
   // Contacts data from database
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+
+  // Contact invitation state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState<string | null>(null);
 
   // Filter events based on the selected filter
   const filteredEvents = (() => {
@@ -260,25 +308,31 @@ export default function UserProfileClient({
       // Convert unorganized contacts to Contact array
       const contactsArray: Contact[] = Object.entries(
         contactsData.unorganized || {},
-      ).map(([id, contact]: [string, any]) => ({
-        id,
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        email: contact.email,
-        avatar: contact.avatar,
-        status: contact.status,
-        addedAt: new Date(contact.addedAt),
-      }));
+      ).map(([id, contact]) => {
+        const contactData = contact as ContactData;
+        return {
+          id,
+          firstName: contactData.firstName,
+          lastName: contactData.lastName,
+          email: contactData.email,
+          avatar: contactData.avatar,
+          status: contactData.status as "active" | "pending" | "declined",
+          addedAt: new Date(contactData.addedAt),
+        };
+      });
 
       // Convert organized groups to ContactGroup array
       const groupsArray: ContactGroup[] = Object.entries(
         contactsData.organized || {},
-      ).map(([id, group]: [string, any]) => ({
-        id,
-        name: group.name,
-        color: group.color,
-        memberIds: group.memberIds,
-      }));
+      ).map(([id, group]) => {
+        const groupData = group as GroupData;
+        return {
+          id,
+          name: groupData.name,
+          color: groupData.color,
+          memberIds: groupData.memberIds,
+        };
+      });
 
       setContacts(contactsArray);
       setGroups(groupsArray);
@@ -298,7 +352,7 @@ export default function UserProfileClient({
       const currentGroups = updatedGroups || groups;
 
       // Convert contacts array back to database format
-      const unorganized: { [key: string]: any } = {};
+      const unorganized: { [key: string]: ContactData } = {};
       currentContacts.forEach((contact) => {
         unorganized[contact.id] = {
           firstName: contact.firstName,
@@ -311,7 +365,7 @@ export default function UserProfileClient({
       });
 
       // Convert groups array back to database format
-      const organized: { [key: string]: any } = {};
+      const organized: { [key: string]: GroupData } = {};
       currentGroups.forEach((group) => {
         organized[group.id] = {
           name: group.name,
@@ -353,6 +407,137 @@ export default function UserProfileClient({
     loadContacts();
   }, []);
 
+  // Search for users to invite
+  const searchUsers = async (query: string, showAll: boolean = false) => {
+    if (!showAll && query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      // If showAll is true or query is empty, search for all users
+      const searchQuery = showAll && query.trim().length === 0 ? "*" : query;
+      const response = await fetch(
+        `/api/users/search?q=${encodeURIComponent(searchQuery)}`,
+        {
+          credentials: "include",
+        },
+      );
+
+      if (response.ok) {
+        const users = await response.json();
+        // Filter out current user but keep all others (including existing contacts)
+        const filteredUsers = users.filter((u: User) => u.id !== user.id);
+        setSearchResults(filteredUsers);
+      }
+    } catch (error) {
+      console.error("Error searching users:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Add user as contact (simplified - just add to contacts without complex invitation system)
+  const addUserAsContact = async (targetUser: User) => {
+    setSendingInvite(targetUser.id);
+    try {
+      // Check if user is already a contact (prevent duplicates)
+      const existingContact = contacts.find(
+        (contact) => contact.email === targetUser.email,
+      );
+      if (existingContact) {
+        console.log("User is already a contact, skipping addition");
+        return;
+      }
+
+      // Create a new contact entry
+      const newContact: Contact = {
+        id: `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        firstName: targetUser.firstName,
+        lastName: targetUser.lastName,
+        email: targetUser.email,
+        avatar: targetUser.avatar || "/img/avatar-demo.png",
+        status: "active", // Simplified - no pending status
+        addedAt: new Date(),
+      };
+
+      // Add to contacts list
+      const updatedContacts = [...contacts, newContact];
+      setContacts(updatedContacts);
+
+      // Save to database
+      await saveContacts(groups, updatedContacts);
+
+      // Remove user from search results
+      setSearchResults((prev) => prev.filter((u) => u.id !== targetUser.id));
+
+      console.log("✅ Contact added successfully");
+    } catch (error) {
+      console.error("Error adding contact:", error);
+    } finally {
+      setSendingInvite(null);
+    }
+  };
+
+  // Toggle invitation mode
+
+  // Handle search input change with debouncing
+  useEffect(() => {
+    if (searchQuery) {
+      const timeoutId = setTimeout(() => {
+        searchUsers(searchQuery);
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery, contacts]);
+
+  // Helper function to check if user is already in contacts
+  const isUserInContacts = (userId: string) => {
+    // Find the user in search results to get their email
+    const searchUser = searchResults.find((u) => u.id === userId);
+    if (!searchUser) return false;
+
+    // Check if this user's email is already in contacts
+    const found = contacts.some(
+      (contact) => contact.email === searchUser.email,
+    );
+
+    console.log("🔍 Contact check:", {
+      searchingUserId: userId,
+      searchUserEmail: searchUser.email,
+      found: found,
+    });
+
+    return found;
+  };
+
+  // Helper function to get contact status
+  const getContactStatus = (userId: string) => {
+    // Find the user in search results to get their email
+    const searchUser = searchResults.find((u) => u.id === userId);
+    if (!searchUser) return null;
+
+    // Find contact by email
+    const contact = contacts.find((c) => c.email === searchUser.email);
+    return contact?.status || null;
+  };
+
+  // Helper function to get the most recent groups for a contact
+  const getContactRecentGroups = (contactId: string) => {
+    // Find all groups that contain this contact
+    const contactGroups = groups.filter((group) =>
+      group.memberIds.includes(contactId),
+    );
+
+    // Return the last 3 groups (most recent additions)
+    // Since we don't have timestamps for when users were added to groups,
+    // we'll use the group creation order as a proxy
+    return contactGroups.slice(-3).reverse();
+  };
+
   // Group management functions
   const handleAddGroup = async () => {
     if (newGroupName.trim()) {
@@ -371,6 +556,42 @@ export default function UserProfileClient({
       // Save to database with updated groups
       await saveContacts(updatedGroups, contacts);
     }
+  };
+
+  const handleEditGroup = (group: ContactGroup) => {
+    setEditingGroup(group.id);
+    setEditGroupName(group.name);
+    setEditGroupColor(group.color);
+  };
+
+  const handleSaveGroupEdit = async () => {
+    if (editingGroup && editGroupName.trim()) {
+      const updatedGroups = groups.map((group) =>
+        group.id === editingGroup
+          ? { ...group, name: editGroupName.trim(), color: editGroupColor }
+          : group,
+      );
+      setGroups(updatedGroups);
+      setEditingGroup(null);
+      setEditGroupName("");
+      setEditGroupColor("#3B82F6");
+
+      // Save to database with updated groups
+      await saveContacts(updatedGroups, contacts);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    const updatedGroups = groups.filter((group) => group.id !== groupId);
+    setGroups(updatedGroups);
+
+    // If the deleted group was selected, clear selection
+    if (selectedGroup === groupId) {
+      setSelectedGroup(null);
+    }
+
+    // Save to database with updated groups
+    await saveContacts(updatedGroups, contacts);
   };
 
   const handleAddToGroup = async (contactId: string, groupId: string) => {
@@ -439,7 +660,12 @@ export default function UserProfileClient({
       setContacts(updatedContacts);
       setGroups(updatedGroups);
 
-      console.log("✅ Contact removed from both users successfully");
+      // Save the updated groups to database
+      await saveContacts(updatedGroups, updatedContacts);
+
+      console.log(
+        "✅ Contact removed from both users and all groups successfully",
+      );
     } catch (error) {
       console.error("Error removing contact:", error);
     }
@@ -550,29 +776,98 @@ export default function UserProfileClient({
                       {groups.map((group) => (
                         <div
                           key={group.id}
-                          className={`flex cursor-pointer items-center justify-between rounded-lg border p-2 transition-colors hover:bg-gray-50 ${
+                          className={`flex items-center justify-between rounded-lg border p-2 transition-colors hover:bg-gray-50 ${
                             selectedGroup === group.id
                               ? "border-blue-200 bg-blue-50"
                               : ""
                           }`}
-                          onClick={() =>
-                            setSelectedGroup(
-                              selectedGroup === group.id ? null : group.id,
-                            )
-                          }
                         >
-                          <div className="flex items-center gap-2">
+                          <div
+                            className="flex flex-1 cursor-pointer items-center gap-2"
+                            onClick={() =>
+                              setSelectedGroup(
+                                selectedGroup === group.id ? null : group.id,
+                              )
+                            }
+                          >
                             <div
                               className="h-2 w-2 rounded-full"
                               style={{ backgroundColor: group.color }}
                             />
-                            <span className="text-sm font-medium">
-                              {group.name}
-                            </span>
+                            {editingGroup === group.id ? (
+                              <div className="flex flex-1 items-center gap-2">
+                                <Input
+                                  value={editGroupName}
+                                  onChange={(e) =>
+                                    setEditGroupName(e.target.value)
+                                  }
+                                  className="h-6 text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <input
+                                  type="color"
+                                  value={editGroupColor}
+                                  onChange={(e) =>
+                                    setEditGroupColor(e.target.value)
+                                  }
+                                  className="h-6 w-6 cursor-pointer rounded border"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <Button
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSaveGroupEdit();
+                                  }}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            ) : (
+                              <span className="text-sm font-medium">
+                                {group.name}
+                              </span>
+                            )}
                           </div>
-                          <span className="text-muted-foreground text-xs">
-                            {group.memberIds.length}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground text-xs">
+                              {group.memberIds.length}
+                            </span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 hover:bg-gray-200"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreVertical className="h-3 w-3" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-32">
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditGroup(group);
+                                  }}
+                                >
+                                  <Pencil className="mr-2 h-3 w-3" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-red-600 focus:text-red-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteGroup(group.id);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-3 w-3" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -678,11 +973,12 @@ export default function UserProfileClient({
 
             {/* Events, Notifications, and Contacts */}
             <Tabs
+              value={activeTab}
               defaultValue="events"
               className="w-full"
               onValueChange={setActiveTab}
             >
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="events" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Your Events
@@ -700,6 +996,10 @@ export default function UserProfileClient({
                 >
                   <Users className="h-4 w-4" />
                   Contacts
+                </TabsTrigger>
+                <TabsTrigger value="invite" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Invite Users
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="events">
@@ -918,22 +1218,24 @@ export default function UserProfileClient({
                             : "People you can invite to events and collaborate with."}
                         </CardDescription>
                       </div>
-                      <Select
-                        value={contactFilter}
-                        onValueChange={(
-                          value: "all" | "active" | "pending" | "declined",
-                        ) => setContactFilter(value)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Filter contacts" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Contacts</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="declined">Declined</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={contactFilter}
+                          onValueChange={(
+                            value: "all" | "active" | "pending" | "declined",
+                          ) => setContactFilter(value)}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter contacts" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Contacts</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="declined">Declined</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -1009,6 +1311,32 @@ export default function UserProfileClient({
                                       )}
                                     </span>
                                   </div>
+                                  {/* Recent Groups for this contact */}
+                                  {(() => {
+                                    const recentGroups = getContactRecentGroups(
+                                      contact.id,
+                                    );
+                                    return recentGroups.length > 0 ? (
+                                      <div className="mt-2 flex flex-wrap gap-1">
+                                        {recentGroups.map((group) => (
+                                          <div
+                                            key={group.id}
+                                            className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs"
+                                          >
+                                            <div
+                                              className="h-1.5 w-1.5 rounded-full"
+                                              style={{
+                                                backgroundColor: group.color,
+                                              }}
+                                            />
+                                            <span className="font-medium">
+                                              {group.name}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : null;
+                                  })()}
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2">
@@ -1105,6 +1433,146 @@ export default function UserProfileClient({
                           )}
                       </div>
                     </ScrollArea>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="invite">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Invite Users</CardTitle>
+                    <CardDescription>
+                      Search for users and add them to your contacts.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Input
+                        placeholder="Search users by name or email... (Press Enter on empty field to see all users)"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (searchQuery.trim() === "") {
+                              searchUsers("", true);
+                            } else {
+                              searchUsers(searchQuery);
+                            }
+                          }
+                        }}
+                        className="w-full"
+                      />
+                      <ScrollArea className="h-[400px]">
+                        <div className="space-y-4">
+                          {isSearching && (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                              <span className="ml-2">Searching users...</span>
+                            </div>
+                          )}
+                          {searchResults.map((searchUser) => (
+                            <div
+                              key={searchUser.id}
+                              className="flex items-center justify-between rounded-lg border p-4"
+                            >
+                              <div className="flex items-center space-x-4">
+                                <Image
+                                  src={
+                                    searchUser.avatar || "/img/avatar-demo.png"
+                                  }
+                                  alt={`${searchUser.firstName} ${searchUser.lastName}`}
+                                  width={48}
+                                  height={48}
+                                  className="rounded-full object-cover"
+                                />
+                                <div>
+                                  <h3 className="font-medium">
+                                    {searchUser.firstName} {searchUser.lastName}
+                                  </h3>
+                                  <p className="text-muted-foreground text-sm">
+                                    {searchUser.email}
+                                  </p>
+                                </div>
+                              </div>
+                              {(() => {
+                                const contactStatus = getContactStatus(
+                                  searchUser.id,
+                                );
+                                const isInContacts = isUserInContacts(
+                                  searchUser.id,
+                                );
+
+                                if (isInContacts) {
+                                  return (
+                                    <div className="flex flex-col gap-1">
+                                      <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                          // Find the contact by email to get the correct contact ID
+                                          const contact = contacts.find(
+                                            (c) => c.email === searchUser.email,
+                                          );
+                                          if (contact)
+                                            handleRemoveContact(contact.id);
+                                        }}
+                                        disabled={
+                                          sendingInvite === searchUser.id
+                                        }
+                                      >
+                                        Remove Contact
+                                      </Button>
+                                      <span className="text-muted-foreground text-xs capitalize">
+                                        Status: {contactStatus}
+                                      </span>
+                                    </div>
+                                  );
+                                } else {
+                                  return (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        addUserAsContact(searchUser)
+                                      }
+                                      disabled={sendingInvite === searchUser.id}
+                                    >
+                                      {sendingInvite === searchUser.id ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Adding...
+                                        </>
+                                      ) : (
+                                        "Add Contact"
+                                      )}
+                                    </Button>
+                                  );
+                                }
+                              })()}
+                            </div>
+                          ))}
+                          {!isSearching &&
+                            searchQuery &&
+                            searchResults.length === 0 && (
+                              <div className="text-muted-foreground py-8 text-center">
+                                <p>
+                                  No users found matching &quot;{searchQuery}
+                                  &quot;
+                                </p>
+                              </div>
+                            )}
+                          {!searchQuery && searchResults.length === 0 && (
+                            <div className="text-muted-foreground py-8 text-center">
+                              <UserPlus className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+                              <p>Start typing to search for users...</p>
+                              <p className="mt-2 text-sm">
+                                💡 Tip: Press Enter on empty field to see all
+                                users
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

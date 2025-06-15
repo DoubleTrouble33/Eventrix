@@ -1,48 +1,58 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
+import { ilike, or, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
-import { ilike, or } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
     const session = await auth();
-    if (!session || !session.user?.id) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q");
 
-    if (!query) {
-      return NextResponse.json({ users: [] });
+    if (!query || (query.length < 2 && query !== "*")) {
+      return NextResponse.json([]);
     }
 
-    // Search users by firstName, lastName, or email
+    // Get current user to exclude from results
+    const currentUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
+
+    // Search users by first name, last name, or email
+    // If query is "*", return all users
     const searchResults = await db
       .select({
         id: users.id,
-        email: users.email,
         firstName: users.firstName,
         lastName: users.lastName,
+        email: users.email,
+        avatar: users.avatar,
       })
       .from(users)
       .where(
-        or(
-          ilike(users.firstName, `%${query}%`),
-          ilike(users.lastName, `%${query}%`),
-          ilike(users.email, `%${query}%`),
-        ),
+        query === "*"
+          ? undefined // No where clause - return all users
+          : or(
+              ilike(users.firstName, `%${query}%`),
+              ilike(users.lastName, `%${query}%`),
+              ilike(users.email, `%${query}%`),
+            ),
       )
-      .limit(10); // Limit results to 10 users
+      .limit(query === "*" ? 50 : 10); // Show more users when showing all
 
-    return NextResponse.json({
-      users: searchResults.map((user) => ({
-        id: user.id,
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-      })),
-    });
+    // Filter out the current user
+    const filteredResults = searchResults.filter(
+      (user) => user.id !== currentUser[0]?.id,
+    );
+
+    return NextResponse.json(filteredResults);
   } catch (error) {
     console.error("Error searching users:", error);
     return NextResponse.json(
