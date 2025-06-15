@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Bell, Shield, Check, X } from "lucide-react";
+import { User, LogOut, Bell, Shield, Check, X, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -54,6 +54,7 @@ export default function RightSide() {
   const [unviewedCount, setUnviewedCount] = useState(0);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -74,58 +75,60 @@ export default function RightSide() {
     fetchUser();
   }, []);
 
-  // Fetch invitations and contact requests count and preview
+  // Function to fetch notifications manually
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    setIsRefreshing(true);
+    try {
+      // Fetch count of unviewed invitations
+      const countResponse = await fetch(
+        `/api/users/${user.id}/invitations/count?viewed=false`,
+        {
+          credentials: "include",
+        },
+      );
+      const countData = await countResponse.json();
+
+      // Fetch contact requests
+      const contactRequestsResponse = await fetch(
+        `/api/users/${user.id}/notifications/contact-requests`,
+        {
+          credentials: "include",
+        },
+      );
+      const contactRequestsData = await contactRequestsResponse.json();
+
+      // Calculate total unviewed count
+      const totalUnviewedCount =
+        countData.count +
+        (contactRequestsData.contactRequests?.filter(
+          (req: ContactRequest) => !req.viewed,
+        ).length || 0);
+      setUnviewedCount(totalUnviewedCount);
+
+      // Fetch preview of invitations
+      const previewResponse = await fetch(
+        `/api/users/${user.id}/invitations/preview`,
+        {
+          credentials: "include",
+        },
+      );
+      const previewData = await previewResponse.json();
+      setInvitations(previewData.invitations);
+      setContactRequests(contactRequestsData.contactRequests || []);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Fetch notifications initially when user is loaded
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!user) return;
-
-      try {
-        // Fetch count of unviewed invitations
-        const countResponse = await fetch(
-          `/api/users/${user.id}/invitations/count?viewed=false`,
-          {
-            credentials: "include",
-          },
-        );
-        const countData = await countResponse.json();
-
-        // Fetch contact requests
-        const contactRequestsResponse = await fetch(
-          `/api/users/${user.id}/notifications/contact-requests`,
-          {
-            credentials: "include",
-          },
-        );
-        const contactRequestsData = await contactRequestsResponse.json();
-
-        // Calculate total unviewed count
-        const totalUnviewedCount =
-          countData.count +
-          (contactRequestsData.contactRequests?.filter(
-            (req: ContactRequest) => !req.viewed,
-          ).length || 0);
-        setUnviewedCount(totalUnviewedCount);
-
-        // Fetch preview of invitations
-        const previewResponse = await fetch(
-          `/api/users/${user.id}/invitations/preview`,
-          {
-            credentials: "include",
-          },
-        );
-        const previewData = await previewResponse.json();
-        setInvitations(previewData.invitations);
-        setContactRequests(contactRequestsData.contactRequests || []);
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
-
-    // Fetch initially and then every 10 seconds for faster updates
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000);
-
-    return () => clearInterval(interval);
+    if (user) {
+      fetchNotifications();
+    }
   }, [user]);
 
   const handleLogout = async () => {
@@ -160,27 +163,14 @@ export default function RightSide() {
         credentials: "include",
       });
 
-      // Update the unviewed count to 0 since we just viewed them all
-      setUnviewedCount(0);
-
-      // Refetch invitations preview to get updated data
-      const previewResponse = await fetch(
-        `/api/users/${user.id}/invitations/preview`,
-        {
-          credentials: "include",
-        },
-      );
-      const previewData = await previewResponse.json();
-      setInvitations(previewData.invitations);
+      // Refresh notifications to get updated counts and data
+      await fetchNotifications();
     } catch (error) {
       console.error("Error marking invitations as viewed:", error);
     }
   };
 
-  const handleAcceptInvitation = async (
-    eventId: string,
-    invitationId: string,
-  ) => {
+  const handleAcceptInvitation = async (eventId: string) => {
     if (!user) return;
 
     try {
@@ -197,13 +187,8 @@ export default function RightSide() {
         throw new Error("Failed to accept invitation");
       }
 
-      // Remove the invitation from the list
-      setInvitations((current) =>
-        current.filter((inv) => inv.id !== invitationId),
-      );
-
-      // Update the unviewed count
-      setUnviewedCount((current) => Math.max(0, current - 1));
+      // Refresh notifications to update counts and lists
+      await fetchNotifications();
 
       // Refresh the page to update the calendar events
       window.location.reload();
@@ -212,10 +197,7 @@ export default function RightSide() {
     }
   };
 
-  const handleDeclineInvitation = async (
-    eventId: string,
-    invitationId: string,
-  ) => {
+  const handleDeclineInvitation = async (eventId: string) => {
     if (!user) return;
 
     try {
@@ -235,13 +217,8 @@ export default function RightSide() {
         throw new Error("Failed to decline invitation");
       }
 
-      // Remove the invitation from the list
-      setInvitations((current) =>
-        current.filter((inv) => inv.id !== invitationId),
-      );
-
-      // Update the unviewed count
-      setUnviewedCount((current) => Math.max(0, current - 1));
+      // Refresh notifications to update counts and lists
+      await fetchNotifications();
     } catch (error) {
       console.error("Error declining invitation:", error);
     }
@@ -267,13 +244,8 @@ export default function RightSide() {
         throw new Error("Failed to accept contact request");
       }
 
-      // Remove the contact request from the list
-      setContactRequests((current) =>
-        current.filter((req) => req.id !== notificationId),
-      );
-
-      // Update the unviewed count
-      setUnviewedCount((current) => Math.max(0, current - 1));
+      // Refresh notifications to update counts and lists
+      await fetchNotifications();
     } catch (error) {
       console.error("Error accepting contact request:", error);
     }
@@ -299,13 +271,8 @@ export default function RightSide() {
         throw new Error("Failed to decline contact request");
       }
 
-      // Remove the contact request from the list
-      setContactRequests((current) =>
-        current.filter((req) => req.id !== notificationId),
-      );
-
-      // Update the unviewed count
-      setUnviewedCount((current) => Math.max(0, current - 1));
+      // Refresh notifications to update counts and lists
+      await fetchNotifications();
     } catch (error) {
       console.error("Error declining contact request:", error);
     }
@@ -341,6 +308,22 @@ export default function RightSide() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
+          {/* Refresh Button */}
+          <div className="border-b p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full gap-2"
+              onClick={fetchNotifications}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isRefreshing ? "Refreshing..." : "Refresh notifications"}
+            </Button>
+          </div>
+
           {invitations.length > 0 || contactRequests.length > 0 ? (
             <>
               {/* Contact Requests */}
@@ -405,10 +388,7 @@ export default function RightSide() {
                       className="h-8 flex-1 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleAcceptInvitation(
-                          invitation.eventId,
-                          invitation.id,
-                        );
+                        handleAcceptInvitation(invitation.eventId);
                       }}
                     >
                       <Check className="mr-1 h-3 w-3" />
@@ -420,10 +400,7 @@ export default function RightSide() {
                       className="h-8 flex-1 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeclineInvitation(
-                          invitation.eventId,
-                          invitation.id,
-                        );
+                        handleDeclineInvitation(invitation.eventId);
                       }}
                     >
                       <X className="mr-1 h-3 w-3" />
