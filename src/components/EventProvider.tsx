@@ -18,68 +18,65 @@ dayjs.extend(timezone);
 const localTimezone = dayjs.tz.guess();
 dayjs.tz.setDefault(localTimezone);
 
-interface DBEvent {
+interface Event {
   id: string;
   title: string;
-  description: string | null;
+  description?: string;
   startTime: string;
   endTime: string;
+  calendarId: string;
   userId: string;
   isPublic: boolean;
-  isRepeating: boolean;
-  repeatDays: number[] | null;
-  repeatEndDate: string | null;
-  categoryId: string;
-  createdAt: string;
-  updatedAt: string;
-  guests?: {
-    id: string;
-    name: string;
-    email: string;
-    eventId: string;
-    createdAt: string;
-  }[];
 }
 
 export function EventProvider({ children }: { children: React.ReactNode }) {
   const { setEvents } = useEventStore();
-  const { selectedCalendars } = useCalendarStore();
+  const { selectedCalendars, setCalendars } = useCalendarStore();
   const { isPublicView } = usePublicPrivateToggleStore();
   const [error, setError] = useState<string | null>(null);
 
+  // Load user's calendars on mount
+  useEffect(() => {
+    const loadCalendars = async () => {
+      try {
+        const response = await fetch("/api/user/calendars", {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load calendars");
+        }
+
+        const data = await response.json();
+        if (data.calendars) {
+          setCalendars(data.calendars);
+        }
+      } catch (error) {
+        console.error("Error loading calendars:", error);
+      }
+    };
+
+    loadCalendars();
+  }, [setCalendars]);
+
+  // Load events when selectedCalendars or isPublicView changes
   useEffect(() => {
     const loadEvents = async () => {
       try {
+        // Clear any existing error
         setError(null);
 
-        // Simple cache for development to reduce API calls
-        const cacheKey = `events-${isPublicView}-${Date.now() - (Date.now() % 30000)}`; // 30 second cache
-        const cached = sessionStorage.getItem(cacheKey);
-
-        if (cached && process.env.NODE_ENV === "development") {
-          const cachedData = JSON.parse(cached);
-          setEvents(cachedData);
-          return;
-        }
-
-        // Always fetch user's personal events (both public and private)
+        // Always fetch user's own events first
         const response = await fetch("/api/events", {
           credentials: "include",
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          console.error("Error response:", data);
-          throw new Error(data.error || "Failed to load events");
+          throw new Error("Failed to load events");
         }
 
         const data = await response.json();
-
-        if (!data.events) {
-          throw new Error("No events data in response");
-        }
-
-        let allEvents = [...data.events];
+        let allEvents = data.events || [];
 
         // If in public view, also fetch ALL public events from other users
         if (isPublicView) {
@@ -93,11 +90,9 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
               if (publicData.events) {
                 // Filter out public events that the user already has (to avoid duplicates)
-                const userEventIds = new Set(
-                  data.events.map((e: DBEvent) => e.id),
-                );
+                const userEventIds = new Set(allEvents.map((e: Event) => e.id));
                 const newPublicEvents = publicData.events.filter(
-                  (event: DBEvent) => !userEventIds.has(event.id),
+                  (event: Event) => !userEventIds.has(event.id),
                 );
                 allEvents = [...allEvents, ...newPublicEvents];
               }
@@ -108,12 +103,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Cache the result for development
-        if (process.env.NODE_ENV === "development") {
-          sessionStorage.setItem(cacheKey, JSON.stringify(allEvents));
-        }
-
-        // Store events in their original format (the store handles date conversion)
         setEvents(allEvents);
       } catch (error) {
         console.error("Error loading events:", error);

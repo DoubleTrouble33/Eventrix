@@ -9,6 +9,7 @@ export async function POST(
 ) {
   try {
     const { eventId } = await request.json();
+    const { userId } = await params;
 
     if (!eventId) {
       return NextResponse.json(
@@ -23,7 +24,7 @@ export async function POST(
         email: users.email,
       })
       .from(users)
-      .where(eq(users.id, params.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (!user[0]) {

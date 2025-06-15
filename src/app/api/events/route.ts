@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { events, eventGuests } from "@/db/schema";
+import { events, eventGuests, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq, inArray, and } from "drizzle-orm";
 import dayjs from "dayjs";
@@ -51,6 +51,27 @@ export async function POST(request: Request) {
     }
 
     try {
+      // Get user's calendars
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, session.user.id));
+
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+
+      // Validate that the calendar exists in user's calendars
+      const userCalendars = user.calendars || [];
+      const calendarExists = userCalendars.some((cal) => cal.id === calendarId);
+
+      if (!calendarExists) {
+        return NextResponse.json(
+          { error: "Invalid calendar ID" },
+          { status: 400 },
+        );
+      }
+
       // Convert dates to UTC for storage
       const startTimeUTC = dayjs(startTime)
         .tz(localTimezone)
@@ -72,7 +93,8 @@ export async function POST(request: Request) {
         isRepeating,
         repeatDays: repeatDays || null,
         repeatEndDate: repeatEndDateUTC ? new Date(repeatEndDateUTC) : null,
-        categoryId: calendarId,
+        calendarId: calendarId,
+        categoryId: calendarId, // Keep this for backward compatibility
       };
 
       const [event] = await db.insert(events).values(newEvent).returning();

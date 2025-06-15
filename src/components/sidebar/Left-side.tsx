@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Image from "next/image";
 
 export function LeftSide() {
   const {
@@ -305,6 +306,14 @@ export function LeftSide() {
             ))}
           </div>
         </div>
+
+        <Image
+          src="/img/Eventrix.svg"
+          alt="Eventrix Logo"
+          width={120}
+          height={40}
+          className="h-10 w-auto"
+        />
       </div>
     </div>
   );

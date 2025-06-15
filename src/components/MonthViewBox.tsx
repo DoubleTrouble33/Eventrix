@@ -42,26 +42,23 @@ export default function MonthViewBox({
       if (event.isPublic) {
         return true;
       }
-      // Also show user's selected calendar events (if any selected)
-      if (selectedCalendars.length > 0) {
-        return selectedCalendars.includes(event.categoryId);
-      }
-      return false;
+      // Also show user's selected calendar events
+      return selectedCalendars.includes(event.calendarId);
     }
 
-    // In PRIVATE view: Only show selected calendar events (private events only)
+    // In PRIVATE view: Only show selected calendar events
     if (selectedCalendars.length === 0) {
       return false; // No calendars selected, show nothing
     }
 
     // Always show events with deleted calendars (orphaned events)
-    const calendarExists = calendars.some((cal) => cal.id === event.categoryId);
+    const calendarExists = calendars.some((cal) => cal.id === event.calendarId);
     if (!calendarExists) {
       return true; // Show orphaned events
     }
 
     // Only show events from selected calendars
-    return selectedCalendars.includes(event.categoryId);
+    return selectedCalendars.includes(event.calendarId);
   });
 
   const handleEventClick = (event: CalendarEventType) => {

@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = context.params.userId;
+    const { userId } = await context.params;
 
     // Verify the user is requesting their own notifications
     if (session.user.id !== userId) {

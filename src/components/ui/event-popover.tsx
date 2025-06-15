@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import dayjs from "dayjs";
 import { useDebounce } from "@/lib/hooks";
@@ -681,9 +682,12 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                     Add Guest
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent aria-describedby="add-guest-description">
                   <DialogHeader>
                     <DialogTitle>Add Guest</DialogTitle>
+                    <DialogDescription id="add-guest-description">
+                      Search for users to add as guests to your event.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="relative">

@@ -90,6 +90,7 @@ export const events = pgTable("events", {
   isRepeating: boolean("is_repeating").default(false).notNull(),
   repeatDays: jsonb("repeat_days").$type<number[]>(),
   repeatEndDate: timestamp("repeat_end_date"),
+  calendarId: text("calendar_id").notNull(),
   categoryId: text("category_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

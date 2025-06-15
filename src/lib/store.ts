@@ -52,6 +52,7 @@ export interface CalendarEventType {
   repeatDays: number[] | null;
   repeatEndDate?: string;
   repeatDuration?: "week" | "2weeks" | "month" | "3months" | "6months";
+  calendarId: string; // The ID of the calendar this event belongs to
   categoryId: string;
   createdAt: string;
   updatedAt: string;
@@ -115,8 +116,8 @@ const defaultCategories: EventCategory[] = [
 
 // Default calendars that come pre-loaded with the app
 const defaultCalendars: CalendarType[] = [
-  { id: "personal", name: "Personal", color: "#3B82F6" },
-  { id: "work", name: "Work", color: "#10B981" },
+  { id: "personal", name: "Personal", color: "#3B82F6", isDefault: true },
+  { id: "work", name: "Work", color: "#10B981", isDefault: true },
 ];
 
 // Store for managing event categories
@@ -302,7 +303,7 @@ interface PublicPrivateToggleType {
 export const usePublicPrivateToggleStore = create<PublicPrivateToggleType>()(
   persist(
     (set, get) => ({
-      isPublicView: false, // Default to private view
+      isPublicView: true, // Default to public view
       setPublicView: (isPublic: boolean) => set({ isPublicView: isPublic }),
       toggleView: () => set({ isPublicView: !get().isPublicView }),
     }),
@@ -317,7 +318,7 @@ export const usePublicPrivateToggleStore = create<PublicPrivateToggleType>()(
 export const useCalendarStore = create<CalendarStore>()(
   persist(
     (set) => ({
-      calendars: [], // Initialize with empty array, will be populated from API
+      calendars: defaultCalendars, // Initialize with default calendars
       setCalendars: (calendars) => {
         // Clean up any old "public" calendar references
         const cleanedCalendars = calendars.filter((cal) => cal.id !== "public");
@@ -332,15 +333,26 @@ export const useCalendarStore = create<CalendarStore>()(
           set({ selectedCalendars: cleanedSelected });
         }
       },
-      selectedCalendars: [], // Initialize with empty selection
-      setSelectedCalendars: (calendarIds) =>
-        set({ selectedCalendars: calendarIds }),
+      selectedCalendars: defaultCalendars.map((cal) => cal.id), // Initialize with all default calendars selected
+      setSelectedCalendars: (calendarIds) => {
+        // Ensure we don't include the "public" calendar ID
+        const cleanedIds = calendarIds.filter((id) => id !== "public");
+        set({ selectedCalendars: cleanedIds });
+      },
       toggleCalendar: (calendarId) =>
         set((state) => {
+          // Don't allow toggling the "public" calendar
+          if (calendarId === "public") return state;
+
           const isSelected = state.selectedCalendars.includes(calendarId);
           const newSelectedCalendars = isSelected
             ? state.selectedCalendars.filter((id) => id !== calendarId)
             : [...state.selectedCalendars, calendarId];
+
+          // Ensure we always have at least one calendar selected
+          if (newSelectedCalendars.length === 0) {
+            return state;
+          }
 
           return { selectedCalendars: newSelectedCalendars };
         }),
@@ -370,6 +382,8 @@ export const useCalendarStore = create<CalendarStore>()(
         // Optimistically update the UI
         set((state) => ({
           calendars: [...state.calendars, newCalendar],
+          // Automatically select the new calendar
+          selectedCalendars: [...state.selectedCalendars, finalId],
         }));
 
         try {
@@ -393,107 +407,53 @@ export const useCalendarStore = create<CalendarStore>()(
           // Revert the state if the API call fails
           set((state) => ({
             calendars: state.calendars.filter((c) => c.id !== newCalendar.id),
-          }));
-          throw error; // Re-throw to handle in the UI
-        }
-      },
-      deleteCalendar: async (calendarId) => {
-        // Check if there are events using this calendar
-        const currentEvents = useEventStore.getState().events;
-        const eventsUsingCalendar = currentEvents.filter(
-          (event) => event.categoryId === calendarId,
-        );
-
-        if (eventsUsingCalendar.length > 0) {
-          const confirmDelete = window.confirm(
-            `This calendar has ${eventsUsingCalendar.length} event(s). Deleting it will make these events appear as "Deleted Calendar". Are you sure you want to continue?`,
-          );
-
-          if (!confirmDelete) {
-            return; // User cancelled deletion
-          }
-        }
-
-        // Optimistically update the UI
-        set((state) => ({
-          calendars: state.calendars.filter((cal) => cal.id !== calendarId),
-          selectedCalendars: state.selectedCalendars.filter(
-            (id) => id !== calendarId,
-          ),
-        }));
-
-        try {
-          const currentCalendars = useCalendarStore.getState().calendars;
-          const response = await fetch("/api/user/calendars", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ calendars: currentCalendars }),
-            credentials: "include",
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.details || "Failed to update calendars");
-          }
-
-          set({ calendars: data.calendars });
-        } catch (error) {
-          console.error("Error updating calendars:", error);
-          // Revert the state if the API call fails
-          set((state) => ({
-            calendars: [
-              ...state.calendars,
-              defaultCalendars.find((c) => c.id === calendarId)!,
-            ],
-          }));
-          throw error; // Re-throw to handle in the UI
-        }
-      },
-      updateCalendar: async (calendarId, updates) => {
-        // Optimistically update the UI
-        set((state) => ({
-          calendars: state.calendars.map((cal) =>
-            cal.id === calendarId ? { ...cal, ...updates } : cal,
-          ),
-        }));
-
-        try {
-          const currentCalendars = useCalendarStore.getState().calendars;
-          const response = await fetch("/api/user/calendars", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ calendars: currentCalendars }),
-            credentials: "include",
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.details || "Failed to update calendars");
-          }
-
-          set({ calendars: data.calendars });
-        } catch (error) {
-          console.error("Error updating calendars:", error);
-          // Revert the state if the API call fails
-          set((state) => ({
-            calendars: state.calendars.map((cal) =>
-              cal.id === calendarId
-                ? {
-                    ...cal,
-                    ...defaultCalendars.find((c) => c.id === calendarId)!,
-                  }
-                : cal,
+            selectedCalendars: state.selectedCalendars.filter(
+              (id) => id !== newCalendar.id,
             ),
           }));
           throw error; // Re-throw to handle in the UI
         }
       },
+      deleteCalendar: (calendarId) =>
+        set((state) => {
+          // Don't allow deleting default calendars
+          const calendar = state.calendars.find((c) => c.id === calendarId);
+          if (calendar?.isDefault) return state;
+
+          // Remove from calendars and selected calendars
+          const newCalendars = state.calendars.filter(
+            (c) => c.id !== calendarId,
+          );
+          const newSelectedCalendars = state.selectedCalendars.filter(
+            (id) => id !== calendarId,
+          );
+
+          // Ensure we always have at least one calendar selected
+          if (newSelectedCalendars.length === 0) {
+            return state;
+          }
+
+          return {
+            calendars: newCalendars,
+            selectedCalendars: newSelectedCalendars,
+          };
+        }),
+      updateCalendar: (calendarId, updates) =>
+        set((state) => {
+          // Don't allow updating default calendars
+          const calendar = state.calendars.find((c) => c.id === calendarId);
+          if (calendar?.isDefault) return state;
+
+          return {
+            calendars: state.calendars.map((cal) =>
+              cal.id === calendarId ? { ...cal, ...updates } : cal,
+            ),
+          };
+        }),
     }),
     {
       name: "calendar-storage",
-      skipHydration: false, // Enable hydration
+      skipHydration: true,
     },
   ),
 );

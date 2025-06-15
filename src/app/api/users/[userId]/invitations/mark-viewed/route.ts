@@ -8,13 +8,15 @@ export async function POST(
   { params }: { params: { userId: string } },
 ) {
   try {
+    const { userId } = await params;
+
     // Get the user's email
     const user = await db
       .select({
         email: users.email,
       })
       .from(users)
-      .where(eq(users.id, params.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (!user[0]) {

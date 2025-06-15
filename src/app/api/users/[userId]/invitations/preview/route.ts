@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { eq, and } from "drizzle-orm";
-import { eventGuests, users, events } from "@/db/schema";
+import { eventGuests, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
 export async function GET(
@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = context.params.userId;
+    const { userId } = await context.params;
 
     // Verify the user is requesting their own invitations
     if (session.user.id !== userId) {
