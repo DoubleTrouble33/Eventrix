@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useCalendarStore, usePublicPrivateToggleStore } from "@/lib/store";
+import {
+  useCalendarStore,
+  usePublicPrivateToggleStore,
+  useThemeStore,
+} from "@/lib/store";
 import { Button } from "../ui/button";
 import {
   ChevronDown,
@@ -45,6 +49,7 @@ export function LeftSide() {
   } | null>(null);
   const { currentDate } = useDateStore();
   const { isPublicView } = usePublicPrivateToggleStore();
+  const { isDarkMode } = useThemeStore();
 
   const handleAddCalendar = () => {
     if (newCalendarName.trim()) {
@@ -136,7 +141,7 @@ export function LeftSide() {
                   setSelectedCalendars(calendars.map((cal) => cal.id));
                 }
               }}
-              className="text-xs"
+              className="text-xs text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             >
               {selectedCalendars.length === calendars.length
                 ? "Deselect All"
@@ -252,7 +257,7 @@ export function LeftSide() {
         <div className="mb-4">
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className="w-full justify-start text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             onClick={() => setIsAddingCalendar(!isAddingCalendar)}
           >
             {isAddingCalendar ? (
@@ -319,13 +324,19 @@ export function LeftSide() {
           </div>
         </div>
 
-        <Image
-          src="/img/Eventrix.svg"
-          alt="Eventrix Logo"
-          width={120}
-          height={40}
-          className="h-10 w-auto"
-        />
+        {isDarkMode ? (
+          <div className="mt-4 text-center">
+            <span className="text-lg font-semibold text-white">Eventrix</span>
+          </div>
+        ) : (
+          <Image
+            src="/img/Eventrix.svg"
+            alt="Eventrix Logo"
+            width={120}
+            height={40}
+            className="mt-4 h-10 w-auto"
+          />
+        )}
       </div>
     </div>
   );

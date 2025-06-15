@@ -298,13 +298,28 @@ export default function RightSide() {
   return (
     <div className="flex items-center gap-4">
       <Select onValueChange={setView}>
-        <SelectTrigger className="w-24 focus-visible:ring-0 focus-visible:ring-offset-0">
+        <SelectTrigger className="w-24 border-gray-300 bg-white text-gray-900 hover:bg-gray-50 focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-gray-500 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
           <SelectValue placeholder="Month" />
         </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="month">Month</SelectItem>
-          <SelectItem value="week">Week</SelectItem>
-          <SelectItem value="day">Day</SelectItem>
+        <SelectContent className="border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800">
+          <SelectItem
+            value="month"
+            className="text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+          >
+            Month
+          </SelectItem>
+          <SelectItem
+            value="week"
+            className="text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+          >
+            Week
+          </SelectItem>
+          <SelectItem
+            value="day"
+            className="text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+          >
+            Day
+          </SelectItem>
         </SelectContent>
       </Select>
 
