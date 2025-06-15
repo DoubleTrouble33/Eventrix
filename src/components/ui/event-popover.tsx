@@ -14,6 +14,13 @@ import {
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import dayjs from "dayjs";
 import { useDebounce } from "@/lib/hooks";
 
@@ -59,6 +66,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     }>
   >([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { events, setEvents } = useEventStore();
@@ -101,9 +109,11 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         );
         if (response.ok) {
           const data = await response.json();
+          // The API returns the array directly, not wrapped in a users property
+          const users = Array.isArray(data) ? data : [];
           // Filter out already selected guests
           setSearchResults(
-            data.users.filter(
+            users.filter(
               (user: { id: string }) =>
                 !selectedGuests.some((guest) => guest.id === user.id),
             ),
@@ -305,6 +315,16 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     } else {
       setRepeatDays([...repeatDays, dayId]);
     }
+  };
+
+  const handleAddGuest = (user: {
+    id: string;
+    email: string;
+    name: string;
+  }) => {
+    setSelectedGuests([...selectedGuests, user]);
+    setSearchQuery("");
+    setIsAddingGuest(false);
   };
 
   return (
@@ -580,92 +600,111 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
           {/* Guest Invitation Section */}
           <div className="space-y-2">
-            <label className="mb-2 block text-sm font-medium">
-              Invite Guests
-            </label>
-            <div className="relative">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Search className="absolute left-3 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name or email"
-                  className="pl-9"
-                />
+                <UserPlus className="h-4 w-4 text-gray-500" />
+                <h3 className="text-sm font-medium text-gray-700">
+                  Guests ({selectedGuests.length})
+                </h3>
               </div>
-              {searchQuery &&
-                (isSearching ? (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
-                    Searching...
-                  </div>
-                ) : (
-                  searchResults.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-                      <ScrollArea className="max-h-48">
-                        {searchResults.map((user) => (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedGuests([...selectedGuests, user]);
-                              setSearchQuery("");
-                            }}
-                            className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-gray-50"
-                          >
-                            <Plus className="h-4 w-4" />
-                            <div>
-                              <div className="font-medium">{user.name}</div>
-                              <div className="text-sm text-gray-500">
-                                {user.email}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </ScrollArea>
-                    </div>
-                  )
-                ))}
-            </div>
-
-            {selectedGuests.length > 0 && (
-              <div className="mt-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">
-                    Selected Guests ({selectedGuests.length})
-                  </span>
-                </div>
-                <ScrollArea className="h-32 rounded-md border bg-gray-50 p-2">
-                  <div className="space-y-2">
-                    {selectedGuests.map((guest) => (
-                      <div
-                        key={guest.id}
-                        className="flex items-center justify-between rounded-md bg-white p-2 shadow-sm"
-                      >
-                        <div>
-                          <div className="font-medium">{guest.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {guest.email}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedGuests(
-                              selectedGuests.filter((g) => g.id !== guest.id),
-                            )
-                          }
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+              <Dialog open={isAddingGuest} onOpenChange={setIsAddingGuest}>
+                <DialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Add Guest
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Guest</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="relative">
+                      <div className="flex items-center gap-2">
+                        <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search by name or email"
+                          className="pl-9"
+                        />
                       </div>
-                    ))}
+                      {searchQuery &&
+                        (isSearching ? (
+                          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                            Searching...
+                          </div>
+                        ) : (
+                          searchResults.length > 0 && (
+                            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                              <ScrollArea className="max-h-48">
+                                {searchResults.map((user) => (
+                                  <button
+                                    key={user.id}
+                                    type="button"
+                                    onClick={() => handleAddGuest(user)}
+                                    className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-gray-50"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    <div>
+                                      <div className="font-medium">
+                                        {user.name}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        {user.email}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </ScrollArea>
+                            </div>
+                          )
+                        ))}
+                    </div>
                   </div>
-                </ScrollArea>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <ScrollArea className="h-32 w-full rounded-md border bg-gray-50 p-2">
+              <div className="space-y-2">
+                {selectedGuests.length > 0 ? (
+                  selectedGuests.map((guest) => (
+                    <div
+                      key={guest.id}
+                      className="flex items-center justify-between rounded-md bg-white p-2 shadow-sm"
+                    >
+                      <div>
+                        <div className="font-medium">{guest.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {guest.email}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedGuests(
+                            selectedGuests.filter((g) => g.id !== guest.id),
+                          )
+                        }
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-sm text-gray-500">
+                    No guests added yet
+                  </div>
+                )}
               </div>
-            )}
+            </ScrollArea>
           </div>
 
           <div className="flex justify-end space-x-2">

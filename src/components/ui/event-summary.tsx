@@ -182,6 +182,47 @@ export function EventSummary() {
     searchUsers();
   }, [debouncedSearch, participants]);
 
+  const handleJoinEvent = async () => {
+    if (!selectedEvent || !currentUser) return;
+
+    try {
+      console.log("Joining event:", selectedEvent.id);
+
+      const response = await fetch(`/api/events/${selectedEvent.id}/guests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: currentUser.email,
+          name: `${currentUser.firstName} ${currentUser.lastName}`,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to join event");
+      }
+
+      const data = await response.json();
+      console.log("Successfully joined event:", data);
+
+      // Update participants list
+      setParticipants([
+        ...participants,
+        {
+          name: `${currentUser.firstName} ${currentUser.lastName}`,
+          email: currentUser.email,
+          isAccepted: true, // Auto-accept when joining
+        },
+      ]);
+    } catch (error) {
+      console.error("Error joining event:", error);
+      alert(error instanceof Error ? error.message : "Failed to join event");
+    }
+  };
+
   const handleAddParticipant = async (user: {
     id: string;
     email: string;
@@ -267,6 +308,43 @@ export function EventSummary() {
     }
   };
 
+  const handleLeaveEvent = async () => {
+    if (!selectedEvent || !currentUser) return;
+
+    try {
+      const response = await fetch(
+        `/api/users/${currentUser.id}/invitations/decline`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ eventId: selectedEvent.id }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to leave event");
+      }
+
+      // Remove the current user from participants list
+      setParticipants(
+        participants.filter((p) => p.email !== currentUser.email),
+      );
+
+      // Update the events list to remove this event for the current user
+      const updatedEvents = events.filter((e) => e.id !== selectedEvent.id);
+      setEvents(updatedEvents);
+
+      // Close the event summary since user is no longer part of the event
+      closeEventSummary();
+    } catch (error) {
+      console.error("Error leaving event:", error);
+      alert(error instanceof Error ? error.message : "Failed to leave event");
+    }
+  };
+
   if (!selectedEvent) return null;
 
   const calendar = calendars.find((c) => c.id === selectedEvent.categoryId);
@@ -312,31 +390,58 @@ export function EventSummary() {
         <div className="space-y-4">
           <div>
             <div className="flex items-start justify-between pt-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {selectedEvent.title}
-              </h2>
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {selectedEvent.title}
+                </h2>
+                {/* Show event type badge for events user didn't create */}
+                {currentUser && selectedEvent.userId !== currentUser.id && (
+                  <div
+                    className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
+                      selectedEvent.isPublic
+                        ? "bg-blue-50 text-blue-600"
+                        : "bg-gray-50 text-gray-600"
+                    }`}
+                  >
+                    {selectedEvent.isPublic ? (
+                      <>
+                        <Globe2 className="h-3 w-3" />
+                        Public Event
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-3 w-3" />
+                        Private Event
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleToggleVisibility}
-                  disabled={isUpdatingVisibility}
-                  className={`flex items-center gap-1 rounded-full px-3 py-1 transition-colors ${
-                    selectedEvent.isPublic
-                      ? "bg-gray-100 hover:bg-gray-200"
-                      : "bg-blue-50 hover:bg-blue-100"
-                  }`}
-                >
-                  {selectedEvent.isPublic ? (
-                    <>
-                      <Globe2 className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-green-600">Public</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm text-blue-600">Private</span>
-                    </>
-                  )}
-                </button>
+                {/* Only show visibility toggle for event owners */}
+                {currentUser && selectedEvent.userId === currentUser.id && (
+                  <button
+                    onClick={handleToggleVisibility}
+                    disabled={isUpdatingVisibility}
+                    className={`flex items-center gap-1 rounded-full px-3 py-1 transition-colors ${
+                      selectedEvent.isPublic
+                        ? "bg-gray-100 hover:bg-gray-200"
+                        : "bg-blue-50 hover:bg-blue-100"
+                    }`}
+                  >
+                    {selectedEvent.isPublic ? (
+                      <>
+                        <Globe2 className="h-4 w-4 text-green-500" />
+                        <span className="text-sm text-green-600">Public</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-blue-600">Private</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -423,71 +528,110 @@ export function EventSummary() {
                   Participants ({participants.length})
                 </h3>
               </div>
-              <Dialog
-                open={isAddingParticipant}
-                onOpenChange={setIsAddingParticipant}
-              >
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    Add Participant
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Participant</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="relative">
-                      <div className="flex items-center gap-2">
-                        <Search className="absolute left-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Search by name or email"
-                          className="pl-9"
-                        />
+              {/* Show JOIN button for public events user didn't create and isn't already participating in */}
+              {selectedEvent.isPublic &&
+              currentUser &&
+              selectedEvent.userId !== currentUser.id
+                ? (() => {
+                    const isParticipant = participants.some(
+                      (p) =>
+                        p.email?.toLowerCase() ===
+                        currentUser.email?.toLowerCase(),
+                    );
+                    console.log("JOIN/JOINED Debug:", {
+                      currentUserEmail: currentUser.email,
+                      participants: participants.map((p) => p.email),
+                      isParticipant,
+                    });
+
+                    return !isParticipant ? (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                        onClick={handleJoinEvent}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        JOIN
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 rounded-md bg-green-100 px-3 py-1 text-sm text-green-700">
+                        <Users className="h-4 w-4" />
+                        JOINED
                       </div>
-                      {searchQuery &&
-                        (isSearching ? (
-                          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
-                            Searching...
-                          </div>
-                        ) : (
-                          searchResults.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-                              <ScrollArea className="max-h-48">
-                                {searchResults.map((user) => (
-                                  <button
-                                    key={user.id}
-                                    type="button"
-                                    onClick={() => handleAddParticipant(user)}
-                                    className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-gray-50"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                    <div>
-                                      <div className="font-medium">
-                                        {user.name}
-                                      </div>
-                                      <div className="text-sm text-gray-500">
-                                        {user.email}
-                                      </div>
-                                    </div>
-                                  </button>
-                                ))}
-                              </ScrollArea>
+                    );
+                  })()
+                : /* Show Add Participant dialog for event owners */
+                  currentUser &&
+                  selectedEvent.userId === currentUser.id && (
+                    <Dialog
+                      open={isAddingParticipant}
+                      onOpenChange={setIsAddingParticipant}
+                    >
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Add Participant
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add Participant</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="relative">
+                            <div className="flex items-center gap-2">
+                              <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search by name or email"
+                                className="pl-9"
+                              />
                             </div>
-                          )
-                        ))}
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                            {searchQuery &&
+                              (isSearching ? (
+                                <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                                  Searching...
+                                </div>
+                              ) : (
+                                searchResults.length > 0 && (
+                                  <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                                    <ScrollArea className="max-h-48">
+                                      {searchResults.map((user) => (
+                                        <button
+                                          key={user.id}
+                                          type="button"
+                                          onClick={() =>
+                                            handleAddParticipant(user)
+                                          }
+                                          className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-gray-50"
+                                        >
+                                          <Plus className="h-4 w-4" />
+                                          <div>
+                                            <div className="font-medium">
+                                              {user.name}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                              {user.email}
+                                            </div>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </ScrollArea>
+                                  </div>
+                                )
+                              ))}
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
             </div>
             <ScrollArea className="h-32 w-full rounded-md border bg-gray-50 p-2">
               <div className="space-y-2">
@@ -510,14 +654,29 @@ export function EventSummary() {
                           </div>
                         </div>
                       </ParticipantHoverCard>
-                      <div
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          participant.isAccepted
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {participant.isAccepted ? "Accepted" : "Pending"}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            participant.isAccepted
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {participant.isAccepted ? "Accepted" : "Pending"}
+                        </div>
+                        {/* Show Leave Event button if this is the current user and they're not the creator */}
+                        {currentUser &&
+                          participant.email === currentUser.email &&
+                          selectedEvent.userId !== currentUser.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleLeaveEvent}
+                              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                              Leave event
+                            </Button>
+                          )}
                       </div>
                     </div>
                   ))

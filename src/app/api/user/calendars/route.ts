@@ -39,7 +39,28 @@ export async function GET() {
         );
       }
 
-      return new Response(JSON.stringify({ calendars: user.calendars }), {
+      // Clean up old "Public Events" calendar from previous implementation
+      let calendars = user.calendars || [];
+      const hasOldPublicCalendar = calendars.some((cal) => cal.id === "public");
+
+      if (hasOldPublicCalendar) {
+        // Remove the old public calendar
+        calendars = calendars.filter((cal) => cal.id !== "public");
+
+        // Update the user's calendars in the database
+        try {
+          await db
+            .update(users)
+            .set({ calendars })
+            .where(eq(users.id, decoded.userId));
+          console.log("Removed old public calendar for user:", decoded.userId);
+        } catch (updateError) {
+          console.error("Error removing old public calendar:", updateError);
+          // Continue anyway, just return the filtered calendars
+        }
+      }
+
+      return new Response(JSON.stringify({ calendars }), {
         headers: { "Content-Type": "application/json" },
       });
     } catch (dbError) {

@@ -116,7 +116,6 @@ const defaultCategories: EventCategory[] = [
 
 // Default calendars that come pre-loaded with the app
 const defaultCalendars: CalendarType[] = [
-  { id: "public", name: "Public Events", color: "#4CAF50", isDefault: true },
   { id: "personal", name: "Personal", color: "#3B82F6" },
   { id: "work", name: "Work", color: "#10B981" },
   { id: "fitness", name: "Fitness", color: "#EF4444" },
@@ -295,13 +294,47 @@ export const useToggleSideBarStore = create<ToggleSideBarType>()(
   }),
 );
 
+// Public/Private view toggle store
+interface PublicPrivateToggleType {
+  isPublicView: boolean;
+  setPublicView: (isPublic: boolean) => void;
+  toggleView: () => void;
+}
+
+export const usePublicPrivateToggleStore = create<PublicPrivateToggleType>()(
+  persist(
+    (set, get) => ({
+      isPublicView: false, // Default to private view
+      setPublicView: (isPublic: boolean) => set({ isPublicView: isPublic }),
+      toggleView: () => set({ isPublicView: !get().isPublicView }),
+    }),
+    {
+      name: "public-private-toggle",
+      skipHydration: false,
+    },
+  ),
+);
+
 // Calendar store implementation with CRUD operations
 export const useCalendarStore = create<CalendarStore>()(
   persist(
     (set) => ({
-      calendars: [], // Initialize with empty array instead of defaultCalendars
-      setCalendars: (calendars) => set({ calendars }),
-      selectedCalendars: ["public"], // Initialize with public calendar selected
+      calendars: [], // Initialize with empty array, will be populated from API
+      setCalendars: (calendars) => {
+        // Clean up any old "public" calendar references
+        const cleanedCalendars = calendars.filter((cal) => cal.id !== "public");
+        set({ calendars: cleanedCalendars });
+
+        // Also remove "public" from selected calendars if it exists
+        const currentState = useCalendarStore.getState();
+        if (currentState.selectedCalendars.includes("public")) {
+          const cleanedSelected = currentState.selectedCalendars.filter(
+            (id) => id !== "public",
+          );
+          set({ selectedCalendars: cleanedSelected });
+        }
+      },
+      selectedCalendars: [], // Initialize with empty selection
       setSelectedCalendars: (calendarIds) =>
         set({ selectedCalendars: calendarIds }),
       toggleCalendar: (calendarId) =>

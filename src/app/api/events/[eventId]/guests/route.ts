@@ -34,12 +34,13 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check if user is the event creator OR an accepted participant
+    // Check if user is the event creator OR an accepted participant OR it's a public event
     const isCreator = event[0].userId === session.user.id;
+    const isPublicEvent = event[0].isPublic;
 
     let isAcceptedParticipant = false;
-    if (!isCreator) {
-      // Check if user is an accepted participant
+    if (!isCreator && !isPublicEvent) {
+      // Check if user is an accepted participant (only needed for private events)
       const userAsGuest = await db
         .select()
         .from(eventGuests)
@@ -54,21 +55,41 @@ export async function POST(
       isAcceptedParticipant = !!currentUserGuest;
     }
 
-    if (!isCreator && !isAcceptedParticipant) {
+    // Allow if: creator, accepted participant, or public event
+    if (!isCreator && !isAcceptedParticipant && !isPublicEvent) {
       return NextResponse.json(
         { error: "Not authorized to modify this event" },
         { status: 403 },
       );
     }
 
-    // Add the guest
+    // Check if the user is trying to join themselves to a public event
+    const isJoiningPublicEvent = isPublicEvent && email === session.user.email;
+
+    // Check if guest already exists
+    const existingGuest = await db
+      .select()
+      .from(eventGuests)
+      .where(eq(eventGuests.eventId, params.eventId))
+      .limit(100);
+
+    const guestExists = existingGuest.find((guest) => guest.email === email);
+
+    if (guestExists) {
+      return NextResponse.json(
+        { error: "User is already a participant" },
+        { status: 400 },
+      );
+    }
+
+    // Add the guest (auto-accept if joining a public event)
     const [guest] = await db
       .insert(eventGuests)
       .values({
         eventId: params.eventId,
         name,
         email,
-        isAccepted: false,
+        isAccepted: isJoiningPublicEvent ? true : false, // Auto-accept public event joins
         viewed: false,
       })
       .returning();
@@ -101,11 +122,12 @@ export async function GET(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check if user is the event creator OR an accepted participant
+    // Check if user is the event creator OR an accepted participant OR it's a public event
     const isCreator = event[0].userId === session.user.id;
+    const isPublicEvent = event[0].isPublic;
 
     let isAcceptedParticipant = false;
-    if (!isCreator) {
+    if (!isCreator && !isPublicEvent) {
       // Get all guests for the event
       const allGuests = await db
         .select()
@@ -125,7 +147,8 @@ export async function GET(
       }
     }
 
-    if (!isCreator && !isAcceptedParticipant) {
+    // Allow viewing if: creator, accepted participant, or public event
+    if (!isCreator && !isAcceptedParticipant && !isPublicEvent) {
       return NextResponse.json(
         { error: "Not authorized to view this event's guests" },
         { status: 403 },

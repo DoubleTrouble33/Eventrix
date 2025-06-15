@@ -78,73 +78,122 @@ export async function POST(
       const currentCalendars = userWithCalendars[0].calendars || [];
       const eventCategoryId = event[0].categoryId;
 
-      // Check if user already has this calendar
-      const hasCalendar = currentCalendars.some(
+      // Get the original calendar from the event creator
+      const eventCreator = await db
+        .select({
+          calendars: users.calendars,
+        })
+        .from(users)
+        .where(eq(users.id, event[0].userId))
+        .limit(1);
+
+      let creatorCalendar = null;
+      if (eventCreator[0]?.calendars) {
+        creatorCalendar = eventCreator[0].calendars.find(
+          (cal: { id: string; name: string; color: string }) =>
+            cal.id === eventCategoryId,
+        );
+      }
+
+      // Check if user already has this exact calendar ID
+      const hasExactCalendar = currentCalendars.some(
         (cal: { id: string }) => cal.id === eventCategoryId,
       );
 
-      if (!hasCalendar) {
-        // Get the original calendar color from the event creator
-        const eventCreator = await db
-          .select({
-            calendars: users.calendars,
-          })
-          .from(users)
-          .where(eq(users.id, event[0].userId))
-          .limit(1);
+      if (!hasExactCalendar && creatorCalendar) {
+        // Check if user has a calendar with the same name (case-insensitive)
+        const existingCalendarWithSameName = currentCalendars.find(
+          (cal: { name: string }) =>
+            cal.name.toLowerCase() === creatorCalendar.name.toLowerCase(),
+        );
 
+        if (existingCalendarWithSameName) {
+          // User has a category with the same name - keep their existing color
+          // Just update the ID to match the event's category ID for consistency
+          const updatedCalendars = currentCalendars.map(
+            (cal: {
+              id: string;
+              name: string;
+              color: string;
+              isDefault?: boolean;
+            }) =>
+              cal.name.toLowerCase() === creatorCalendar.name.toLowerCase()
+                ? { ...cal, id: eventCategoryId }
+                : cal,
+          );
+
+          await db
+            .update(users)
+            .set({
+              calendars: updatedCalendars,
+            })
+            .where(eq(users.id, params.userId));
+        } else {
+          // User doesn't have a category with this name - create new one with creator's color
+          const updatedCalendars = [
+            ...currentCalendars,
+            {
+              id: eventCategoryId,
+              name: creatorCalendar.name,
+              color: creatorCalendar.color,
+              isDefault: false,
+            },
+          ];
+
+          await db
+            .update(users)
+            .set({
+              calendars: updatedCalendars,
+            })
+            .where(eq(users.id, params.userId));
+        }
+      } else if (!hasExactCalendar) {
+        // Fallback: Creator doesn't have the calendar, use default mappings
         let calendarName =
           eventCategoryId.charAt(0).toUpperCase() + eventCategoryId.slice(1);
         let calendarColor = "#6B7280"; // Default gray color
 
-        // Find the matching calendar from the event creator
-        if (eventCreator[0]?.calendars) {
-          const creatorCalendar = eventCreator[0].calendars.find(
-            (cal: { id: string; name: string; color: string }) =>
-              cal.id === eventCategoryId,
-          );
+        const defaultCalendarMap: {
+          [key: string]: { name: string; color: string };
+        } = {
+          work: { name: "Work", color: "#10B981" },
+          personal: { name: "Personal", color: "#3B82F6" },
+          fitness: { name: "Fitness", color: "#EF4444" },
+          health: { name: "Health", color: "#F59E0B" },
+          public: { name: "Public Events", color: "#4CAF50" },
+        };
 
-          if (creatorCalendar) {
-            calendarName = creatorCalendar.name;
-            calendarColor = creatorCalendar.color;
-          } else {
-            // Fallback to default mappings if creator doesn't have the calendar
-            const defaultCalendarMap: {
-              [key: string]: { name: string; color: string };
-            } = {
-              work: { name: "Work", color: "#10B981" },
-              personal: { name: "Personal", color: "#3B82F6" },
-              fitness: { name: "Fitness", color: "#EF4444" },
-              health: { name: "Health", color: "#F59E0B" },
-              public: { name: "Public Events", color: "#4CAF50" },
-            };
-
-            const defaultCalendar = defaultCalendarMap[eventCategoryId];
-            if (defaultCalendar) {
-              calendarName = defaultCalendar.name;
-              calendarColor = defaultCalendar.color;
-            }
-          }
+        const defaultCalendar = defaultCalendarMap[eventCategoryId];
+        if (defaultCalendar) {
+          calendarName = defaultCalendar.name;
+          calendarColor = defaultCalendar.color;
         }
 
-        // Add the missing calendar to user's calendars with synchronized color
-        const updatedCalendars = [
-          ...currentCalendars,
-          {
-            id: eventCategoryId,
-            name: calendarName,
-            color: calendarColor,
-            isDefault: false,
-          },
-        ];
+        // Check if user has a calendar with the same name
+        const existingCalendarWithSameName = currentCalendars.find(
+          (cal: { name: string }) =>
+            cal.name.toLowerCase() === calendarName.toLowerCase(),
+        );
 
-        // Update user's calendars in the database
-        await db
-          .update(users)
-          .set({
-            calendars: updatedCalendars,
-          })
-          .where(eq(users.id, params.userId));
+        if (!existingCalendarWithSameName) {
+          // Add the missing calendar
+          const updatedCalendars = [
+            ...currentCalendars,
+            {
+              id: eventCategoryId,
+              name: calendarName,
+              color: calendarColor,
+              isDefault: false,
+            },
+          ];
+
+          await db
+            .update(users)
+            .set({
+              calendars: updatedCalendars,
+            })
+            .where(eq(users.id, params.userId));
+        }
       }
     }
 

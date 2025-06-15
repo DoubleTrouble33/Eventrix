@@ -1,5 +1,10 @@
 import { cn } from "@/lib/utils";
-import { getEventsForDay, useEventStore, useCalendarStore } from "@/lib/store";
+import {
+  getEventsForDay,
+  useEventStore,
+  useCalendarStore,
+  usePublicPrivateToggleStore,
+} from "@/lib/store";
 import dayjs from "dayjs";
 import React, { useState } from "react";
 import { EventPopover } from "./ui/event-popover";
@@ -18,6 +23,7 @@ export default function MonthViewBox({
   const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
 
   const { selectedCalendars, calendars } = useCalendarStore();
+  const { isPublicView } = usePublicPrivateToggleStore();
 
   if (!day) {
     return (
@@ -28,18 +34,34 @@ export default function MonthViewBox({
   const isFirstDayOfMonth = day?.date() === 1;
   const isToday = day.format("DD-MM-YY") === dayjs().format("DD-MM-YY");
 
-  // Filter events for this day and by selected calendars
+  // Filter events for this day based on public/private view and selected calendars
   const dayEvents = getEventsForDay(events, day).filter((event) => {
+    // In PUBLIC view: Show public events + selected calendar events
+    if (isPublicView) {
+      // Show public events regardless of calendar selection
+      if (event.isPublic) {
+        return true;
+      }
+      // Also show user's selected calendar events (if any selected)
+      if (selectedCalendars.length > 0) {
+        return selectedCalendars.includes(event.categoryId);
+      }
+      return false;
+    }
+
+    // In PRIVATE view: Only show selected calendar events (private events only)
+    if (selectedCalendars.length === 0) {
+      return false; // No calendars selected, show nothing
+    }
+
     // Always show events with deleted calendars (orphaned events)
     const calendarExists = calendars.some((cal) => cal.id === event.categoryId);
     if (!calendarExists) {
       return true; // Show orphaned events
     }
 
-    const calendarMatch =
-      selectedCalendars.length > 0 &&
-      selectedCalendars.includes(event.categoryId);
-    return calendarMatch;
+    // Only show events from selected calendars
+    return selectedCalendars.includes(event.categoryId);
   });
 
   const handleEventClick = (event: CalendarEventType) => {

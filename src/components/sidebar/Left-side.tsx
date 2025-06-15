@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCalendarStore } from "@/lib/store";
+import { useCalendarStore, usePublicPrivateToggleStore } from "@/lib/store";
 import { Button } from "../ui/button";
 import {
   ChevronDown,
@@ -10,6 +10,9 @@ import {
   MoreVertical,
   Pencil,
   Trash2,
+  Globe2,
+  Lock,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "../ui/input";
@@ -40,6 +43,7 @@ export function LeftSide() {
     color: string;
   } | null>(null);
   const { currentDate } = useDateStore();
+  const { isPublicView } = usePublicPrivateToggleStore();
 
   const handleAddCalendar = () => {
     if (newCalendarName.trim()) {
@@ -85,6 +89,31 @@ export function LeftSide() {
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex-1 overflow-y-auto p-4">
+        {/* Public/Private Mode Info */}
+        <div className="mb-4 rounded-lg border bg-gray-50 p-3">
+          <div className="mb-2 flex items-center gap-2">
+            {isPublicView ? (
+              <>
+                <Globe2 className="h-4 w-4 text-green-600" />
+                <span className="font-medium text-green-700">PUBLIC MODE</span>
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-blue-700">PRIVATE MODE</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-start gap-2">
+            <Info className="mt-0.5 h-3 w-3 flex-shrink-0 text-gray-500" />
+            <p className="text-xs text-gray-600">
+              {isPublicView
+                ? "Showing all public events + your selected calendars"
+                : "Showing only events from your selected calendars"}
+            </p>
+          </div>
+        </div>
+
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-lg font-semibold">My Calendars</h2>
