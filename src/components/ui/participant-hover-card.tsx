@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./button";
 import { UserPlus, Check } from "lucide-react";
 import {
@@ -27,10 +27,47 @@ export function ParticipantHoverCard({
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isAlreadyContact, setIsAlreadyContact] = useState(false);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   // Don't show hover effect if this is the current user
   const isCurrentUser =
     currentUserEmail && participant.email === currentUserEmail;
+
+  // Check if participant is already in contacts
+  useEffect(() => {
+    const checkIfContact = async () => {
+      if (isCurrentUser || !participant.email) return;
+
+      setIsLoadingContacts(true);
+      try {
+        const response = await fetch("/api/user/contacts", {
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const contacts = data.contacts || { organized: {}, unorganized: {} };
+
+          // Check if participant email exists in contacts
+          const isContact = Object.values(contacts.unorganized || {}).some(
+            (contact) => {
+              const contactData = contact as { email?: string };
+              return contactData?.email === participant.email;
+            },
+          );
+
+          setIsAlreadyContact(isContact);
+        }
+      } catch (error) {
+        console.error("Error checking contacts:", error);
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    };
+
+    checkIfContact();
+  }, [participant.email, isCurrentUser]);
 
   const handleAddContact = async () => {
     if (!participant.email) {
@@ -114,7 +151,12 @@ export function ParticipantHoverCard({
           </div>
 
           <div className="flex items-center gap-2">
-            {isAdded ? (
+            {isAlreadyContact ? (
+              <div className="flex items-center gap-2 text-sm text-blue-600">
+                <Check className="h-4 w-4" />
+                Already in contacts
+              </div>
+            ) : isAdded ? (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <Check className="h-4 w-4" />
                 Contact request sent!
@@ -124,11 +166,15 @@ export function ParticipantHoverCard({
                 size="sm"
                 variant="outline"
                 onClick={handleAddContact}
-                disabled={isAdding}
+                disabled={isAdding || isLoadingContacts}
                 className="flex items-center gap-2"
               >
                 <UserPlus className="h-4 w-4" />
-                {isAdding ? "Sending..." : "Add to Contacts"}
+                {isAdding
+                  ? "Sending..."
+                  : isLoadingContacts
+                    ? "Checking..."
+                    : "Add to Contacts"}
               </Button>
             )}
           </div>
