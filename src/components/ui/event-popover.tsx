@@ -42,8 +42,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     "week" | "2weeks" | "month" | "3months" | "6months"
   >("month");
   const [isPublic, setIsPublic] = useState(true);
-  const [selectedCalendarId, setSelectedCalendarId] =
-    useState<string>("public");
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string>("");
   const [currentUser, setCurrentUser] = useState<{
     firstName: string;
     lastName: string;
@@ -71,7 +70,12 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { events, setEvents } = useEventStore();
-  const { calendars } = useCalendarStore();
+  const { calendars, addCalendar } = useCalendarStore();
+
+  // Add state for new calendar creation
+  const [isCreatingCalendar, setIsCreatingCalendar] = useState(false);
+  const [newCalendarName, setNewCalendarName] = useState("");
+  const [newCalendarColor, setNewCalendarColor] = useState("#3B82F6");
 
   // Fetch current user data
   useEffect(() => {
@@ -155,7 +159,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     }
 
     if (!selectedCalendarId) {
-      setError("Please select a calendar");
+      setError(
+        "Please select a calendar (Personal, Work, or create a new one)",
+      );
       return;
     }
 
@@ -303,6 +309,31 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     setIsAddingGuest(false);
   };
 
+  // Function to handle calendar creation
+  const handleCreateCalendar = async () => {
+    if (!newCalendarName.trim()) {
+      setError("Calendar name is required");
+      return;
+    }
+
+    try {
+      await addCalendar({
+        name: newCalendarName.trim(),
+        color: newCalendarColor,
+      });
+      setIsCreatingCalendar(false);
+      setNewCalendarName("");
+      setNewCalendarColor("#3B82F6");
+    } catch (error) {
+      console.error("Error creating calendar:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to create calendar. Please try again.",
+      );
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
@@ -353,43 +384,102 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="mb-2 block text-sm font-medium">Calendar</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-sm font-medium">Calendar</label>
+            <div className="grid grid-cols-2 gap-2">
               {calendars.map((calendar) => (
-                <label
+                <button
                   key={calendar.id}
-                  className={`flex cursor-pointer items-center gap-2 rounded-full px-3 py-1 text-sm transition-colors ${
+                  type="button"
+                  onClick={() => setSelectedCalendarId(calendar.id)}
+                  className={`flex items-center gap-2 rounded-lg border p-2 text-sm ${
                     selectedCalendarId === calendar.id
-                      ? "bg-gray-100"
-                      : "hover:bg-gray-50"
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="calendar"
-                    value={calendar.id}
-                    checked={selectedCalendarId === calendar.id}
-                    onChange={() => setSelectedCalendarId(calendar.id)}
-                    className="hidden"
+                  <div
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: calendar.color }}
                   />
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`flex h-4 w-4 items-center justify-center rounded-full border-2`}
-                      style={{ borderColor: calendar.color }}
-                    >
-                      {selectedCalendarId === calendar.id && (
-                        <div
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: calendar.color }}
-                        />
-                      )}
-                    </div>
-                    {calendar.name}
-                  </div>
-                </label>
+                  <span>{calendar.name}</span>
+                </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setIsCreatingCalendar(true)}
+                className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 p-2 text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New Calendar</span>
+              </button>
             </div>
+            {!selectedCalendarId && (
+              <p className="text-sm text-red-500">
+                Please select a calendar or create a new one
+              </p>
+            )}
           </div>
+
+          {/* New Calendar Creation Dialog */}
+          {isCreatingCalendar && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+                <h3 className="mb-4 text-lg font-semibold">
+                  Create New Calendar
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">
+                      Calendar Name
+                    </label>
+                    <Input
+                      value={newCalendarName}
+                      onChange={(e) => setNewCalendarName(e.target.value)}
+                      placeholder="Enter calendar name"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">
+                      Calendar Color
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={newCalendarColor}
+                        onChange={(e) => setNewCalendarColor(e.target.value)}
+                        className="h-8 w-8 cursor-pointer rounded border"
+                      />
+                      <Input
+                        value={newCalendarColor}
+                        onChange={(e) => setNewCalendarColor(e.target.value)}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsCreatingCalendar(false);
+                        setNewCalendarName("");
+                        setNewCalendarColor("#3B82F6");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleCreateCalendar}
+                      disabled={!newCalendarName.trim()}
+                    >
+                      Create Calendar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="flex items-center gap-2">

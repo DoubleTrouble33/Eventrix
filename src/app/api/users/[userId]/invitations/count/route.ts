@@ -1,20 +1,30 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { eventGuests, users } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { users } from "@/db/schema";
+import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } },
+  context: { params: { userId: string } },
 ) {
   try {
-    // Get the user's email
+    const session = await auth();
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = context.params.userId;
+
+    // Verify the user is requesting their own invitations
+    if (session.user.id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const user = await db
-      .select({
-        email: users.email,
-      })
+      .select()
       .from(users)
-      .where(eq(users.id, params.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (!user[0]) {
@@ -22,34 +32,24 @@ export async function GET(
     }
 
     // Get the viewed parameter from the URL
-    const url = new URL(request.url);
-    const viewedParam = url.searchParams.get("viewed");
+    const { searchParams } = new URL(request.url);
+    const viewed = searchParams.get("viewed");
 
-    // Build the where conditions
-    const conditions = [
-      eq(eventGuests.email, user[0].email),
-      eq(eventGuests.isAccepted, false),
-    ];
+    // Get the user's notifications
+    const notifications = user[0].notifications || [];
 
-    // Add viewed condition if specified
-    if (viewedParam !== null) {
-      conditions.push(eq(eventGuests.viewed, viewedParam === "true"));
-    }
+    // Filter notifications based on the viewed parameter
+    const filteredNotifications = notifications.filter(
+      (notification) =>
+        notification.type === "event_invitation" &&
+        (viewed === null || notification.viewed === (viewed === "true")),
+    );
 
-    // Count invitations
-    const result = await db
-      .select({
-        count: eventGuests.id,
-      })
-      .from(eventGuests)
-      .where(and(...conditions))
-      .groupBy(eventGuests.id);
-
-    return NextResponse.json({ count: result.length });
+    return NextResponse.json({ count: filteredNotifications.length });
   } catch (error) {
-    console.error("Error getting invitations count:", error);
+    console.error("Error getting invitation count:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to get invitation count" },
       { status: 500 },
     );
   }

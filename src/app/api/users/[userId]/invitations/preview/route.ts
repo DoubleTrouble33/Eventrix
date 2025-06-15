@@ -6,45 +6,51 @@ import { auth } from "@/lib/auth";
 
 export async function GET(
   request: Request,
-  { params }: { params: { userId: string } },
+  context: { params: { userId: string } },
 ) {
   try {
     const session = await auth();
-    if (!session || session.user.id !== params.userId) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get preview of unread and unaccepted invitations with host information
-    const result = await db
-      .select({
-        id: eventGuests.id,
-        eventId: events.id,
-        eventTitle: events.title,
-        hostName: users.firstName,
-        startTime: events.startTime,
-        endTime: events.endTime,
-        description: events.description,
-        isRepeating: events.isRepeating,
-        repeatDays: events.repeatDays,
-        repeatEndDate: events.repeatEndDate,
-      })
-      .from(eventGuests)
-      .innerJoin(events, eq(events.id, eventGuests.eventId))
-      .innerJoin(users, eq(users.id, events.userId)) // Join with host's user record
-      .where(
-        and(
-          eq(eventGuests.email, session.user.email), // Match guest's email
-          eq(eventGuests.isAccepted, false), // Only unaccepted invitations
-        ),
-      )
-      .limit(5) // Only get the 5 most recent invitations
-      .execute();
+    const userId = context.params.userId;
 
-    return NextResponse.json({ invitations: result });
+    // Verify the user is requesting their own invitations
+    if (session.user.id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user[0]) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get the user's notifications
+    const notifications = user[0].notifications || [];
+
+    // Filter notifications to only include event invitations
+    const invitations = notifications.filter(
+      (notification) => notification.type === "event_invitation",
+    );
+
+    // Sort invitations by createdAt (newest first)
+    invitations.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    // Return only the first 5 invitations
+    return NextResponse.json(invitations.slice(0, 5));
   } catch (error) {
-    console.error("Error getting invitation previews:", error);
+    console.error("Error getting invitation preview:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Failed to get invitation preview" },
       { status: 500 },
     );
   }
