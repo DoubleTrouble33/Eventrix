@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useEventStore,
-  useCalendarStore,
-  CalendarEventType,
-  useThemeStore,
-} from "@/lib/store";
+import { useEventStore, useCalendarStore, useThemeStore } from "@/lib/store";
 import { ScrollArea } from "./scroll-area";
 import { Button } from "./button";
 import {
@@ -587,7 +582,7 @@ export function EventSummary() {
                           <div className="space-y-4 py-4">
                             <div className="relative">
                               <div className="flex items-center gap-2">
-                                <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+                                <Search className="absolute left-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
                                 <Input
                                   type="text"
                                   value={searchQuery}
@@ -614,11 +609,11 @@ export function EventSummary() {
                                             onClick={() =>
                                               handleAddParticipant(user)
                                             }
-                                            className="flex w-full items-center gap-2 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-600"
+                                            className="flex w-full items-center gap-2 px-4 py-2 text-left text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-gray-600"
                                           >
-                                            <Plus className="h-4 w-4" />
+                                            <Plus className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                                             <div>
-                                              <div className="font-medium">
+                                              <div className="font-medium text-gray-900 dark:text-white">
                                                 {user.name}
                                               </div>
                                               <div className="text-sm text-gray-500 dark:text-gray-400">

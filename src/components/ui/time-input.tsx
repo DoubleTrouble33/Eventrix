@@ -63,7 +63,7 @@ export function TimeInput({
         onValueChange={handleHourChange}
         required={required}
       >
-        <SelectTrigger className="w-20">
+        <SelectTrigger className="w-20 text-gray-900 dark:text-white">
           <SelectValue placeholder="HH" />
         </SelectTrigger>
         <SelectContent>
@@ -75,14 +75,16 @@ export function TimeInput({
         </SelectContent>
       </Select>
 
-      <span className="flex items-center text-lg font-medium">:</span>
+      <span className="flex items-center text-lg font-medium text-gray-900 dark:text-white">
+        :
+      </span>
 
       <Select
         value={minutes}
         onValueChange={handleMinuteChange}
         required={required}
       >
-        <SelectTrigger className="w-20">
+        <SelectTrigger className="w-20 text-gray-900 dark:text-white">
           <SelectValue placeholder="MM" />
         </SelectTrigger>
         <SelectContent>
