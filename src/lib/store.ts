@@ -314,6 +314,27 @@ export const usePublicPrivateToggleStore = create<PublicPrivateToggleType>()(
   ),
 );
 
+// Theme toggle store for dashboard dark mode
+interface ThemeStoreType {
+  isDarkMode: boolean;
+  toggleTheme: () => void;
+  setTheme: (isDark: boolean) => void;
+}
+
+export const useThemeStore = create<ThemeStoreType>()(
+  persist(
+    (set, get) => ({
+      isDarkMode: false, // Default to light mode
+      toggleTheme: () => set({ isDarkMode: !get().isDarkMode }),
+      setTheme: (isDark: boolean) => set({ isDarkMode: isDark }),
+    }),
+    {
+      name: "dashboard-theme",
+      skipHydration: false,
+    },
+  ),
+);
+
 // Calendar store implementation with CRUD operations
 export const useCalendarStore = create<CalendarStore>()(
   persist(

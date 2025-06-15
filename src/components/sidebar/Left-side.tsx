@@ -91,23 +91,27 @@ export function LeftSide() {
     <div className="flex h-full w-full flex-col">
       <div className="flex-1 overflow-y-auto p-4">
         {/* Public/Private Mode Info */}
-        <div className="mb-4 rounded-lg border bg-gray-50 p-3">
+        <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-700">
           <div className="mb-2 flex items-center gap-2">
             {isPublicView ? (
               <>
-                <Globe2 className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-green-700">PUBLIC MODE</span>
+                <Globe2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <span className="font-medium text-green-700 dark:text-green-300">
+                  PUBLIC MODE
+                </span>
               </>
             ) : (
               <>
-                <Lock className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-blue-700">PRIVATE MODE</span>
+                <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="font-medium text-blue-700 dark:text-blue-300">
+                  PRIVATE MODE
+                </span>
               </>
             )}
           </div>
           <div className="flex items-start gap-2">
-            <Info className="mt-0.5 h-3 w-3 flex-shrink-0 text-gray-500" />
-            <p className="text-xs text-gray-600">
+            <Info className="mt-0.5 h-3 w-3 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+            <p className="text-xs text-gray-600 dark:text-gray-300">
               {isPublicView
                 ? "Showing all public events + your selected calendars"
                 : "Showing only events from your selected calendars"}
@@ -117,7 +121,9 @@ export function LeftSide() {
 
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">My Calendars</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              My Calendars
+            </h2>
             <Button
               variant="ghost"
               size="sm"
@@ -144,8 +150,8 @@ export function LeftSide() {
                 className={cn(
                   "flex items-center justify-between rounded-lg p-2",
                   selectedCalendars.includes(calendar.id)
-                    ? "bg-gray-100"
-                    : "hover:bg-gray-100",
+                    ? "bg-gray-100 dark:bg-gray-700"
+                    : "hover:bg-gray-100 dark:hover:bg-gray-700",
                 )}
               >
                 <div
@@ -193,22 +199,24 @@ export function LeftSide() {
                       </Button>
                     </div>
                   ) : (
-                    <span>{calendar.name}</span>
+                    <span className="text-gray-900 dark:text-white">
+                      {calendar.name}
+                    </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedCalendars.includes(calendar.id) && (
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                   )}
                   {!calendar.isDefault && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
-                          className="h-8 w-8 p-0 hover:bg-gray-200"
+                          className="h-8 w-8 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-32">
@@ -255,7 +263,7 @@ export function LeftSide() {
             Add Calendar
           </Button>
           {isAddingCalendar && (
-            <div className="mt-2 space-y-2 rounded-lg border p-2">
+            <div className="mt-2 space-y-2 rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-600 dark:bg-gray-700">
               <Input
                 placeholder="Calendar name"
                 value={newCalendarName}
@@ -283,13 +291,16 @@ export function LeftSide() {
         {/* Mini Calendar */}
         <div className="mt-4">
           <div className="mb-2">
-            <h3 className="text-sm font-medium">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
               {currentDate.format("MMMM YYYY")}
             </h3>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-xs">
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-              <div key={day} className="py-1 font-medium text-gray-500">
+              <div
+                key={day}
+                className="py-1 font-medium text-gray-500 dark:text-gray-400"
+              >
                 {day}
               </div>
             ))}
@@ -297,8 +308,9 @@ export function LeftSide() {
               <div
                 key={index}
                 className={cn(
-                  "cursor-pointer rounded py-1 hover:bg-gray-100",
-                  day === currentDate.date() && "bg-blue-100",
+                  "cursor-pointer rounded py-1 text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700",
+                  day === currentDate.date() &&
+                    "bg-blue-100 dark:bg-blue-900/50",
                 )}
               >
                 {day}

@@ -47,7 +47,7 @@ function Calendar({
         months: "flex flex-col space-y-4",
         month: "space-y-3",
         caption: "flex justify-between pt-1 relative items-center px-1",
-        caption_label: "text-sm font-medium text-gray-900",
+        caption_label: "text-sm font-medium text-gray-900 dark:text-white",
         nav: "flex items-center gap-1",
         nav_button: cn(
           buttonVariants({ variant: "ghost" }),

@@ -38,21 +38,28 @@ export default function DayView() {
 
   return (
     <>
-      <div className="grid grid-cols-[auto_1fr] place-items-center px-4 py-2">
-        <div className="w-16 border-r border-gray-300">
+      <div className="grid grid-cols-[auto_1fr] place-items-center bg-white px-4 py-2 dark:bg-gray-800">
+        <div className="w-16 border-r border-gray-300 dark:border-gray-600">
           <div className="relative h-16">
-            <div className="absolute top-2 text-xs text-gray-600">GMT +2</div>
+            <div className="absolute top-2 text-xs text-gray-600 dark:text-gray-400">
+              GMT +2
+            </div>
           </div>
         </div>
 
         {/* Day View Header */}
         <div className="flex flex-col items-center">
-          <div className={cn("text-xs", isToday && "text-blue-600")}>
+          <div
+            className={cn(
+              "text-xs text-gray-900 dark:text-white",
+              isToday && "text-blue-600",
+            )}
+          >
             {userSelectedDate.format("ddd")}
           </div>
           <div
             className={cn(
-              "h-12 w-12 rounded-full p-2 text-2xl",
+              "h-12 w-12 rounded-full p-2 text-2xl text-gray-900 dark:text-white",
               isToday && "bg-blue-600 text-white",
             )}
           >
@@ -62,19 +69,19 @@ export default function DayView() {
       </div>
 
       <ScrollArea className="h-[70vh]">
-        <div className="grid grid-cols-[auto_1fr] p-4">
+        <div className="grid grid-cols-[auto_1fr] bg-white p-4 dark:bg-gray-800">
           {/* Time Column */}
-          <div className="w-16 border-r border-gray-300">
+          <div className="w-16 border-r border-gray-300 dark:border-gray-600">
             {getHours.map((hour, index) => (
               <div key={index} className="relative h-16">
-                <div className="absolute -top-2 text-xs text-gray-600">
+                <div className="absolute -top-2 text-xs text-gray-600 dark:text-gray-400">
                   {hour.format("HH:mm")}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="relative border-r border-gray-300">
+          <div className="relative border-r border-gray-300 dark:border-gray-600">
             {getHours.map((hour, i) => {
               const dayEvents = getEventsForDay(
                 events,
@@ -87,7 +94,7 @@ export default function DayView() {
               return (
                 <div
                   key={i}
-                  className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100"
+                  className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
                   onClick={() => {
                     if (dayEvents.length === 0) {
                       handleAddEvent(hour);

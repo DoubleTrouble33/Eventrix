@@ -373,10 +373,10 @@ export function EventSummary() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
         <button
           onClick={closeEventSummary}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <X className="h-5 w-5" />
         </button>
@@ -385,7 +385,7 @@ export function EventSummary() {
           <div>
             <div className="flex items-start justify-between pt-4">
               <div className="flex-1">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {selectedEvent.title}
                 </h2>
                 {/* Show event type badge for events user didn't create */}
@@ -394,7 +394,7 @@ export function EventSummary() {
                     className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
                       selectedEvent.isPublic
                         ? "bg-blue-50 text-blue-600"
-                        : "bg-gray-50 text-gray-600"
+                        : "bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                     }`}
                   >
                     {selectedEvent.isPublic ? (
@@ -458,20 +458,22 @@ export function EventSummary() {
                     }}
                     currentUserEmail={currentUser?.email}
                   >
-                    <span className="cursor-pointer text-sm text-gray-600 transition-colors hover:text-blue-600">
+                    <span className="cursor-pointer text-sm text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-300">
                       Created by {creator.firstName} {creator.lastName}
                     </span>
                   </ParticipantHoverCard>
                 </div>
-                <span className="text-sm text-gray-400">•</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-400 dark:text-gray-500">
+                  •
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {dayjs(selectedEvent.createdAt).format("MMM D, YYYY HH:mm")}
                 </span>
               </div>
             )}
 
             <div className="mt-2 flex items-center gap-2">
-              <Tag className="h-4 w-4 text-gray-500" />
+              <Tag className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               <div
                 className="flex items-center gap-2 rounded-full px-2 py-0.5 text-sm"
                 style={{ backgroundColor: `${displayCalendar.color}20` }}
@@ -487,7 +489,7 @@ export function EventSummary() {
               </div>
             </div>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
               {selectedEvent.isRepeating ? (
                 <>
                   {dayjs(selectedEvent.startTime).format("MMMM D")} -{" "}
@@ -507,8 +509,8 @@ export function EventSummary() {
             </p>
           </div>
 
-          <ScrollArea className="h-32 w-full rounded-md border p-4">
-            <p className="text-gray-700">
+          <ScrollArea className="h-32 w-full rounded-md border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-700">
+            <p className="text-gray-700 dark:text-gray-300">
               {selectedEvent.description || "No description provided."}
             </p>
           </ScrollArea>
@@ -517,8 +519,8 @@ export function EventSummary() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <h3 className="text-sm font-medium text-gray-700">
+                <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Participants ({participants.length})
                 </h3>
               </div>
@@ -606,7 +608,7 @@ export function EventSummary() {
                                             <div className="font-medium">
                                               {user.name}
                                             </div>
-                                            <div className="text-sm text-gray-500">
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">
                                               {user.email}
                                             </div>
                                           </div>
@@ -638,7 +640,7 @@ export function EventSummary() {
                           <div className="font-medium transition-colors hover:text-blue-600">
                             {participant.name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             {participant.email}
                           </div>
                         </div>
@@ -670,7 +672,7 @@ export function EventSummary() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-sm text-gray-500">
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400">
                     No participants yet
                   </div>
                 )}

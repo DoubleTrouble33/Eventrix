@@ -23,7 +23,7 @@ interface EventDetailsProps {
 export function EventDetails({ event, onClose }: EventDetailsProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl dark:bg-gray-800">
         {/* Header with gradient background */}
         <div className="relative rounded-t-xl bg-gradient-to-r from-blue-500 to-purple-500 p-6 text-white">
           <button
@@ -47,15 +47,17 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
         <div className="p-6">
           <div className="space-y-4">
             {/* Date & Time */}
-            <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
+            <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
               {event.isRepeating ? (
-                <Repeat className="mt-0.5 h-5 w-5 text-gray-500" />
+                <Repeat className="mt-0.5 h-5 w-5 text-gray-500 dark:text-gray-400" />
               ) : (
-                <Clock className="mt-0.5 h-5 w-5 text-gray-500" />
+                <Clock className="mt-0.5 h-5 w-5 text-gray-500 dark:text-gray-400" />
               )}
               <div>
-                <h3 className="font-medium text-gray-900">Date & Time</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium text-gray-900 dark:text-white">
+                  Date & Time
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {event.isRepeating ? (
                     <>
                       {dayjs(event.startTime).format("MMMM D")} -{" "}
@@ -77,24 +79,30 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
             </div>
 
             {/* Category */}
-            <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
-              <Tag className="mt-0.5 h-5 w-5 text-gray-500" />
+            <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+              <Tag className="mt-0.5 h-5 w-5 text-gray-500 dark:text-gray-400" />
               <div>
-                <h3 className="font-medium text-gray-900">Category</h3>
-                <p className="text-sm text-gray-600">{event.categoryId}</p>
+                <h3 className="font-medium text-gray-900 dark:text-white">
+                  Category
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {event.categoryId}
+                </p>
               </div>
             </div>
 
             {/* Visibility */}
-            <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3">
+            <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
               {event.isPublic ? (
-                <Globe2 className="mt-0.5 h-5 w-5 text-gray-500" />
+                <Globe2 className="mt-0.5 h-5 w-5 text-gray-500 dark:text-gray-400" />
               ) : (
-                <Lock className="mt-0.5 h-5 w-5 text-gray-500" />
+                <Lock className="mt-0.5 h-5 w-5 text-gray-500 dark:text-gray-400" />
               )}
               <div>
-                <h3 className="font-medium text-gray-900">Visibility</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-medium text-gray-900 dark:text-white">
+                  Visibility
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   {event.isPublic
                     ? "Public Event - Anyone can find this event"
                     : "Private Event - Only invited guests can see this event"}
@@ -104,10 +112,12 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
 
             {/* Description */}
             {event.description && (
-              <div className="rounded-lg bg-gray-50 p-3">
-                <h3 className="mb-2 font-medium text-gray-900">Description</h3>
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-700">
+                <h3 className="mb-2 font-medium text-gray-900 dark:text-white">
+                  Description
+                </h3>
                 <ScrollArea className="h-24">
-                  <p className="text-sm leading-relaxed text-gray-600">
+                  <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
                     {event.description}
                   </p>
                 </ScrollArea>

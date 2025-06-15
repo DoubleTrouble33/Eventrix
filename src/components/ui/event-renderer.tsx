@@ -72,7 +72,7 @@ export function EventRenderer({
 
           {showOptions && (
             <div
-              className="ring-opacity-5 absolute right-0 z-10 mt-1 w-32 rounded-md bg-white shadow-lg ring-1 ring-black"
+              className="ring-opacity-5 absolute right-0 z-10 mt-1 w-32 rounded-md bg-white shadow-lg ring-1 ring-black dark:bg-gray-800 dark:ring-gray-600"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="py-1">
@@ -81,7 +81,7 @@ export function EventRenderer({
                     onEdit?.(event);
                     setShowOptions(false);
                   }}
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   Edit
                 </button>
@@ -90,7 +90,7 @@ export function EventRenderer({
                     onDelete?.(event);
                     setShowOptions(false);
                   }}
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   Delete
                 </button>

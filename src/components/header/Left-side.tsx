@@ -100,7 +100,7 @@ export default function LeftSide() {
           />
         </Link>
 
-        <h1 className="text-xl">Calendar</h1>
+        <h1 className="text-xl text-gray-900 dark:text-white">Calendar</h1>
       </div>
       {/* Today Button */}
       <Button
@@ -113,11 +113,11 @@ export default function LeftSide() {
       {/* Navigation Controls */}
       <div className="flex items-center gap-3">
         <MdKeyboardArrowLeft
-          className="size-6 cursor-pointer font-bold"
+          className="size-6 cursor-pointer font-bold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           onClick={handlePrevClick}
         />
         <MdKeyboardArrowRight
-          className="size-6 cursor-pointer font-bold"
+          className="size-6 cursor-pointer font-bold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           onClick={handleNextClick}
         />
       </div>
@@ -129,25 +129,29 @@ export default function LeftSide() {
         onClick={toggleView}
         className={`flex items-center gap-2 transition-colors ${
           isPublicView
-            ? "border-green-200 bg-green-50 hover:bg-green-100"
-            : "border-blue-200 bg-blue-50 hover:bg-blue-100"
+            ? "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/30"
+            : "border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30"
         }`}
       >
         {isPublicView ? (
           <>
-            <Globe2 className="h-4 w-4 text-green-600" />
-            <span className="font-medium text-green-700">PUBLIC</span>
+            <Globe2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <span className="font-medium text-green-700 dark:text-green-300">
+              PUBLIC
+            </span>
           </>
         ) : (
           <>
-            <Lock className="h-4 w-4 text-blue-600" />
-            <span className="font-medium text-blue-700">PRIVATE</span>
+            <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="font-medium text-blue-700 dark:text-blue-300">
+              PRIVATE
+            </span>
           </>
         )}
       </Button>
 
       {/* Current Month and Year Display */}
-      <h1 className="hidden text-xl lg:block">
+      <h1 className="hidden text-xl text-gray-900 lg:block dark:text-white">
         {dayjs(new Date(dayjs().year(), selectedMonthIndex)).format(
           "MMMM YYYY",
         )}

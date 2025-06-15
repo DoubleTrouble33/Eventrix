@@ -19,7 +19,7 @@ export default function MonthViewBox({
 
   if (!day) {
     return (
-      <div className="h-12 w-full border md:h-28 md:w-full lg:h-full"></div>
+      <div className="h-12 w-full border border-gray-200 md:h-28 md:w-full lg:h-full dark:border-gray-700"></div>
     );
   }
 
@@ -37,20 +37,20 @@ export default function MonthViewBox({
   return (
     <div
       className={cn(
-        "group relative flex h-full flex-col gap-y-2 border p-1",
-        "transition-all hover:bg-violet-50",
+        "group relative flex h-full flex-col gap-y-2 border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-800",
+        "transition-all hover:bg-violet-50 dark:hover:bg-gray-700",
       )}
     >
       <div className="flex items-start justify-between">
         <div className="flex flex-col items-start">
           {rowIndex === 0 && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {day.format("ddd").toUpperCase()}
             </span>
           )}
           <span
             className={cn(
-              "text-sm",
+              "text-sm text-gray-900 dark:text-white",
               isToday &&
                 "flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white",
             )}

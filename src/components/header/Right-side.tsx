@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { useViewStore } from "@/lib/store";
+import { useViewStore, useThemeStore } from "@/lib/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Bell, Shield, Check, X, RefreshCw } from "lucide-react";
+import {
+  User,
+  LogOut,
+  Bell,
+  Shield,
+  Check,
+  X,
+  RefreshCw,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -43,6 +53,7 @@ interface ContactRequest {
 
 export default function RightSide() {
   const { setView } = useViewStore();
+  const { isDarkMode, toggleTheme } = useThemeStore();
   const router = useRouter();
   const [user, setUser] = useState<{
     id: string;
@@ -431,10 +442,25 @@ export default function RightSide() {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Theme Toggle Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        className="relative"
+        title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+      >
+        {isDarkMode ? (
+          <Sun className="h-5 w-5" />
+        ) : (
+          <Moon className="h-5 w-5" />
+        )}
+      </Button>
+
       {user?.isAdmin && (
         <Button
           variant="ghost"
-          className="gap-2 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+          className="gap-2 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300"
           onClick={() => router.push("/admin")}
         >
           <Shield className="h-4 w-4" />
@@ -445,11 +471,11 @@ export default function RightSide() {
       <div className="flex items-center gap-2">
         {user && (
           <span
-            className={`text-sm font-medium ${user.isAdmin ? "text-emerald-600" : ""}`}
+            className={`text-sm font-medium ${user.isAdmin ? "text-emerald-600 dark:text-emerald-400" : "text-gray-900 dark:text-white"}`}
           >
             {user.firstName} {user.lastName}
             {user.isAdmin && (
-              <span className="ml-1 text-xs text-emerald-600"></span>
+              <span className="ml-1 text-xs text-emerald-600 dark:text-emerald-400"></span>
             )}
           </span>
         )}

@@ -45,7 +45,10 @@ export function RightSide() {
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs">
           {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-            <div key={`day-header-${index}`} className="text-gray-500">
+            <div
+              key={`day-header-${index}`}
+              className="text-gray-500 dark:text-gray-400"
+            >
               {day}
             </div>
           ))}

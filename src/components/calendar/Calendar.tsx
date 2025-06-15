@@ -62,7 +62,7 @@ export function Calendar({ currentDate }: CalendarProps) {
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div
             key={day}
-            className="border-r border-b p-2 text-center text-sm font-medium text-gray-500"
+            className="border-r border-b border-gray-200 p-2 text-center text-sm font-medium text-gray-500 dark:border-gray-600 dark:text-gray-400"
           >
             {day}
           </div>

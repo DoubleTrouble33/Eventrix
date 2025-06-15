@@ -214,7 +214,10 @@ export function EditEventDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="title"
+              className="mb-2 block text-sm font-medium dark:text-white"
+            >
               Event Title
             </label>
             <Input
@@ -228,7 +231,9 @@ export function EditEventDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="mb-2 block text-sm font-medium">Calendar</label>
+            <label className="mb-2 block text-sm font-medium dark:text-white">
+              Calendar
+            </label>
             <div className="flex flex-wrap gap-2">
               {calendars.map((calendar) => (
                 <label
@@ -271,13 +276,13 @@ export function EditEventDialog({
               {isPublic ? (
                 <Globe2 className="h-5 w-5 text-green-500" />
               ) : (
-                <Lock className="h-5 w-5 text-gray-500" />
+                <Lock className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               )}
               <div>
                 <div className="font-medium">
                   {isPublic ? "Public Event" : "Private Event"}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   {isPublic
                     ? "Anyone can find this event"
                     : "Only you and guests can see this event"}
@@ -301,9 +306,9 @@ export function EditEventDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium dark:text-white">
                 Start Time
-                <span className="ml-1 text-xs text-gray-500">
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
                   (24-hour format)
                 </span>
               </label>
@@ -315,9 +320,9 @@ export function EditEventDialog({
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium dark:text-white">
                 End Time
-                <span className="ml-1 text-xs text-gray-500">
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
                   (24-hour format)
                 </span>
               </label>
@@ -333,17 +338,17 @@ export function EditEventDialog({
           <div>
             <label
               htmlFor="description"
-              className="mb-2 block text-sm font-medium"
+              className="mb-2 block text-sm font-medium dark:text-white"
             >
               Description
             </label>
-            <ScrollArea className="h-32 w-full rounded-md border">
+            <ScrollArea className="h-32 w-full rounded-md border border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-700">
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter event description"
-                className="min-h-[8rem] w-full resize-none border-0 p-4 focus:outline-none"
+                className="min-h-[8rem] w-full resize-none border-0 p-4 focus:outline-none dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
             </ScrollArea>
           </div>

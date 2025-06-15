@@ -337,10 +337,10 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <X className="h-5 w-5" />
         </button>
@@ -350,7 +350,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         </h2>
 
         {currentUser && (
-          <div className="mb-6 flex items-center gap-2 border-b pb-4 text-sm text-gray-600">
+          <div className="mb-6 flex items-center gap-2 border-b border-gray-200 pb-4 text-sm text-gray-600 dark:border-gray-600 dark:text-gray-300">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
               <span className="font-medium text-blue-700">
                 {currentUser.firstName[0]}
@@ -371,7 +371,10 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="title"
+              className="mb-2 block text-sm font-medium dark:text-white"
+            >
               Event Title
             </label>
             <Input
@@ -385,7 +388,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Calendar</label>
+            <label className="text-sm font-medium dark:text-white">
+              Calendar
+            </label>
             <div className="grid grid-cols-2 gap-2">
               {calendars.map((calendar) => (
                 <button
@@ -408,7 +413,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
               <button
                 type="button"
                 onClick={() => setIsCreatingCalendar(true)}
-                className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 p-2 text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 p-2 text-sm text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-200"
               >
                 <Plus className="h-4 w-4" />
                 <span>New Calendar</span>
@@ -424,13 +429,13 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           {/* New Calendar Creation Dialog */}
           {isCreatingCalendar && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+              <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
                 <h3 className="mb-4 text-lg font-semibold">
                   Create New Calendar
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <label className="mb-2 block text-sm font-medium dark:text-white">
                       Calendar Name
                     </label>
                     <Input
@@ -440,7 +445,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
+                    <label className="mb-2 block text-sm font-medium dark:text-white">
                       Calendar Color
                     </label>
                     <div className="flex items-center gap-2">
@@ -487,13 +492,13 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
               {isPublic ? (
                 <Globe2 className="h-5 w-5 text-green-500" />
               ) : (
-                <Lock className="h-5 w-5 text-gray-500" />
+                <Lock className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               )}
               <div>
                 <div className="font-medium">
                   {isPublic ? "Public Event" : "Private Event"}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   {isPublic
                     ? "Anyone can find this event"
                     : "Only you and guests can see this event"}
@@ -517,9 +522,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium dark:text-white">
                 Start Time
-                <span className="ml-1 text-xs text-gray-500">
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
                   (24-hour format)
                 </span>
               </label>
@@ -531,9 +536,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
               />
             </div>
             <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label className="mb-2 block text-sm font-medium dark:text-white">
                 End Time
-                <span className="ml-1 text-xs text-gray-500">
+                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">
                   (24-hour format)
                 </span>
               </label>
@@ -549,17 +554,17 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           <div>
             <label
               htmlFor="description"
-              className="mb-2 block text-sm font-medium"
+              className="mb-2 block text-sm font-medium dark:text-white"
             >
               Description
             </label>
-            <ScrollArea className="h-32 w-full rounded-md border">
+            <ScrollArea className="h-32 w-full rounded-md border border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-700">
               <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter event description"
-                className="min-h-[8rem] w-full resize-none border-0 p-4 focus:outline-none"
+                className="min-h-[8rem] w-full resize-none border-0 p-4 focus:outline-none dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
               />
             </ScrollArea>
           </div>
@@ -575,7 +580,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
               />
               <label
                 htmlFor="repeat-event"
-                className="ml-2 flex items-center text-sm text-gray-700"
+                className="ml-2 flex items-center text-sm text-gray-700 dark:text-gray-300"
               >
                 <Repeat className="mr-1 h-4 w-4" />
                 Repeat Event
@@ -588,7 +593,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                   <button
                     type="button"
                     onClick={() => setShowRepeatOptions(!showRepeatOptions)}
-                    className="flex w-full items-center justify-between rounded-md border border-gray-300 px-3 py-2 text-left text-sm"
+                    className="flex w-full items-center justify-between rounded-md border border-gray-300 px-3 py-2 text-left text-sm dark:border-gray-600"
                   >
                     <span>
                       {repeatDays.length === 0
@@ -604,7 +609,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                   </button>
 
                   {showRepeatOptions && (
-                    <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white p-2 shadow-lg">
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white p-2 shadow-lg dark:border-gray-600 dark:bg-gray-700">
                       <div className="grid grid-cols-3 gap-2">
                         {daysOfWeek.map((day) => (
                           <div key={day.id} className="flex items-center">
@@ -617,7 +622,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                             />
                             <label
                               htmlFor={`day-${day.id}`}
-                              className="ml-2 text-sm text-gray-700"
+                              className="ml-2 text-sm text-gray-700 dark:text-gray-300"
                             >
                               {day.name.substring(0, 3)}
                             </label>
@@ -631,7 +636,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                 <div className="mt-4">
                   <label
                     htmlFor="repeat-duration"
-                    className="mb-2 block text-sm font-medium"
+                    className="mb-2 block text-sm font-medium dark:text-white"
                   >
                     Repeat for
                   </label>
@@ -648,7 +653,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                           | "6months",
                       )
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600"
                   >
                     <option value="week">1 Week</option>
                     <option value="2weeks">2 Weeks</option>
@@ -665,8 +670,8 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-gray-500" />
-                <h3 className="text-sm font-medium text-gray-700">
+                <UserPlus className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Guests ({selectedGuests.length})
                 </h3>
               </div>
@@ -703,12 +708,12 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                       </div>
                       {searchQuery &&
                         (isSearching ? (
-                          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500">
+                          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white p-4 text-center text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400">
                             Searching...
                           </div>
                         ) : (
                           searchResults.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                            <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-700">
                               <ScrollArea className="max-h-48">
                                 {searchResults.map((user) => (
                                   <button
@@ -722,7 +727,7 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                                       <div className="font-medium">
                                         {user.name}
                                       </div>
-                                      <div className="text-sm text-gray-500">
+                                      <div className="text-sm text-gray-500 dark:text-gray-400">
                                         {user.email}
                                       </div>
                                     </div>
@@ -737,17 +742,17 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                 </DialogContent>
               </Dialog>
             </div>
-            <ScrollArea className="h-32 w-full rounded-md border bg-gray-50 p-2">
+            <ScrollArea className="h-32 w-full rounded-md border border-gray-200 bg-gray-50 p-2 dark:border-gray-600 dark:bg-gray-700">
               <div className="space-y-2">
                 {selectedGuests.length > 0 ? (
                   selectedGuests.map((guest) => (
                     <div
                       key={guest.id}
-                      className="flex items-center justify-between rounded-md bg-white p-2 shadow-sm"
+                      className="flex items-center justify-between rounded-md bg-white p-2 shadow-sm dark:bg-gray-600"
                     >
                       <div>
                         <div className="font-medium">{guest.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {guest.email}
                         </div>
                       </div>
@@ -758,14 +763,14 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                             selectedGuests.filter((g) => g.id !== guest.id),
                           )
                         }
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center text-sm text-gray-500">
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400">
                     No guests added yet
                   </div>
                 )}
