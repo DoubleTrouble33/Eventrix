@@ -21,7 +21,7 @@ export function EventRenderer({
   onDelete,
 }: EventRendererProps) {
   const [showOptions, setShowOptions] = useState(false);
-  const timeFormat = variant === "month" ? "HH:mm" : "h:mm A";
+  const timeFormat = "HH:mm"; // Always use 24-hour format
   const { calendars } = useCalendarStore();
   const calendar = calendars.find((c) => c.id === event.categoryId);
 

@@ -13,6 +13,7 @@ import {
   UserPlus,
   Search,
   Plus,
+  Edit,
 } from "lucide-react";
 import { ParticipantHoverCard } from "./participant-hover-card";
 import dayjs from "dayjs";
@@ -26,6 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useDebounce } from "@/lib/hooks";
+import { EditEventDialog } from "./edit-event-dialog";
 
 export function EventSummary() {
   const { selectedEvent, closeEventSummary, events, setEvents } =
@@ -55,6 +57,7 @@ export function EventSummary() {
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingParticipant, setIsAddingParticipant] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [currentUser, setCurrentUser] = useState<{
     id: string;
@@ -186,8 +189,6 @@ export function EventSummary() {
     if (!selectedEvent || !currentUser) return;
 
     try {
-      console.log("Joining event:", selectedEvent.id);
-
       const response = await fetch(`/api/events/${selectedEvent.id}/guests`, {
         method: "POST",
         headers: {
@@ -205,8 +206,7 @@ export function EventSummary() {
         throw new Error(errorData.error || "Failed to join event");
       }
 
-      const data = await response.json();
-      console.log("Successfully joined event:", data);
+      await response.json();
 
       // Update participants list
       setParticipants([
@@ -231,9 +231,6 @@ export function EventSummary() {
     if (!selectedEvent) return;
 
     try {
-      console.log("Adding participant:", user);
-      console.log("Event ID:", selectedEvent.id);
-
       const response = await fetch(`/api/events/${selectedEvent.id}/guests`, {
         method: "POST",
         headers: {
@@ -246,8 +243,6 @@ export function EventSummary() {
         }),
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
         console.error("API Error:", errorData);
@@ -257,7 +252,6 @@ export function EventSummary() {
       }
 
       const data = await response.json();
-      console.log("Success data:", data);
       setParticipants([...participants, data.guest]);
       setSearchQuery("");
       setIsAddingParticipant(false);
@@ -471,7 +465,7 @@ export function EventSummary() {
                 </div>
                 <span className="text-sm text-gray-400">•</span>
                 <span className="text-sm text-gray-600">
-                  {dayjs(selectedEvent.createdAt).format("MMM D, YYYY h:mm A")}
+                  {dayjs(selectedEvent.createdAt).format("MMM D, YYYY HH:mm")}
                 </span>
               </div>
             )}
@@ -499,15 +493,15 @@ export function EventSummary() {
                   {dayjs(selectedEvent.startTime).format("MMMM D")} -{" "}
                   {dayjs(selectedEvent.repeatEndDate).format("MMMM D, YYYY")}
                   <br />
-                  {dayjs(selectedEvent.startTime).format("h:mm A")} -{" "}
-                  {dayjs(selectedEvent.endTime).format("h:mm A")}
+                  {dayjs(selectedEvent.startTime).format("HH:mm")} -{" "}
+                  {dayjs(selectedEvent.endTime).format("HH:mm")}
                 </>
               ) : (
                 <>
                   {dayjs(selectedEvent.startTime).format("MMMM D, YYYY")}
                   <br />
-                  {dayjs(selectedEvent.startTime).format("h:mm A")} -{" "}
-                  {dayjs(selectedEvent.endTime).format("h:mm A")}
+                  {dayjs(selectedEvent.startTime).format("HH:mm")} -{" "}
+                  {dayjs(selectedEvent.endTime).format("HH:mm")}
                 </>
               )}
             </p>
@@ -538,11 +532,6 @@ export function EventSummary() {
                         p.email?.toLowerCase() ===
                         currentUser.email?.toLowerCase(),
                     );
-                    console.log("JOIN/JOINED Debug:", {
-                      currentUserEmail: currentUser.email,
-                      participants: participants.map((p) => p.email),
-                      isParticipant,
-                    });
 
                     return !isParticipant ? (
                       <Button
@@ -691,14 +680,28 @@ export function EventSummary() {
 
           <div className="flex justify-end space-x-2">
             {currentUser && selectedEvent.userId === currentUser.id && (
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                className="flex items-center gap-2"
-              >
-                <Trash className="h-4 w-4" />
-                Delete Event
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(true);
+                    // Only hide the event summary UI, don't clear selectedEvent yet
+                    useEventStore.setState({ isEventSummaryOpen: false });
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Event
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="flex items-center gap-2"
+                >
+                  <Trash className="h-4 w-4" />
+                  Delete Event
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={closeEventSummary}>
               Close
@@ -706,6 +709,15 @@ export function EventSummary() {
           </div>
         </div>
       </div>
+
+      {/* Edit Event Dialog */}
+      {selectedEvent && (
+        <EditEventDialog
+          event={selectedEvent}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
     </div>
   );
 }

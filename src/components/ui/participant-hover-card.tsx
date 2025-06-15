@@ -64,15 +64,6 @@ export function ParticipantHoverCard({
 
       setIsAdded(true);
 
-      // Show different messages based on the response
-      if (data.mutual) {
-        console.log(
-          "🎉 Mutual contact detected! Both contacts are now active.",
-        );
-      } else {
-        console.log("📤 Contact request sent successfully");
-      }
-
       // Refresh the page after a short delay to show the updated contact list
       setTimeout(() => {
         window.location.reload();

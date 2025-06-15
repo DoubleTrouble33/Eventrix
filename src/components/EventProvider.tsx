@@ -51,14 +51,21 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     const loadEvents = async () => {
       try {
         setError(null);
-        console.log("Fetching events...", { isPublicView, selectedCalendars });
+
+        // Simple cache for development to reduce API calls
+        const cacheKey = `events-${isPublicView}-${Date.now() - (Date.now() % 30000)}`; // 30 second cache
+        const cached = sessionStorage.getItem(cacheKey);
+
+        if (cached && process.env.NODE_ENV === "development") {
+          const cachedData = JSON.parse(cached);
+          setEvents(cachedData);
+          return;
+        }
 
         // Always fetch user's personal events (both public and private)
         const response = await fetch("/api/events", {
           credentials: "include",
         });
-
-        console.log("Response status:", response.status);
 
         if (!response.ok) {
           const data = await response.json();
@@ -67,7 +74,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         }
 
         const data = await response.json();
-        console.log("Received personal events data:", data);
 
         if (!data.events) {
           throw new Error("No events data in response");
@@ -84,7 +90,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
             if (publicResponse.ok) {
               const publicData = await publicResponse.json();
-              console.log("Received public events data:", publicData);
 
               if (publicData.events) {
                 // Filter out public events that the user already has (to avoid duplicates)
@@ -95,9 +100,6 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
                   (event: DBEvent) => !userEventIds.has(event.id),
                 );
                 allEvents = [...allEvents, ...newPublicEvents];
-                console.log(
-                  `Added ${newPublicEvents.length} new public events`,
-                );
               }
             }
           } catch (publicError) {
@@ -106,21 +108,10 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Convert dates to dayjs objects and handle time zones for logging
-        const eventsForLogging = allEvents.map((event: DBEvent) => ({
-          ...event,
-          startTimeLocal: dayjs(event.startTime)
-            .tz(localTimezone)
-            .format("YYYY-MM-DD HH:mm:ss"),
-          endTimeLocal: dayjs(event.endTime)
-            .tz(localTimezone)
-            .format("YYYY-MM-DD HH:mm:ss"),
-          repeatEndDateLocal: event.repeatEndDate
-            ? dayjs(event.repeatEndDate).tz(localTimezone).format("YYYY-MM-DD")
-            : undefined,
-        }));
-
-        console.log("Processed events:", eventsForLogging);
+        // Cache the result for development
+        if (process.env.NODE_ENV === "development") {
+          sessionStorage.setItem(cacheKey, JSON.stringify(allEvents));
+        }
 
         // Store events in their original format (the store handles date conversion)
         setEvents(allEvents);

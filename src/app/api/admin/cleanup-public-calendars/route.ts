@@ -5,8 +5,6 @@ import { sql } from "drizzle-orm";
 
 export async function POST() {
   try {
-    console.log("Starting cleanup of old public calendars...");
-
     // Get all users who have calendars
     const allUsers = await db
       .select({
@@ -15,8 +13,6 @@ export async function POST() {
       })
       .from(users)
       .where(sql`${users.calendars} IS NOT NULL`);
-
-    console.log(`Found ${allUsers.length} users with calendars`);
 
     let updatedCount = 0;
     let errorCount = 0;
@@ -41,17 +37,12 @@ export async function POST() {
             .where(sql`${users.id} = ${user.id}`);
 
           updatedCount++;
-          console.log(`Cleaned public calendar for user: ${user.id}`);
         }
       } catch (userError) {
         console.error(`Error cleaning user ${user.id}:`, userError);
         errorCount++;
       }
     }
-
-    console.log(
-      `Cleanup completed. Updated: ${updatedCount}, Errors: ${errorCount}`,
-    );
 
     return NextResponse.json({
       success: true,

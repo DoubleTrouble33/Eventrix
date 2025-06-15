@@ -374,8 +374,6 @@ export default function UserProfileClient({
         };
       });
 
-      console.log("Saving contacts to database:", { organized, unorganized });
-
       const response = await fetch("/api/user/contacts", {
         method: "PUT",
         headers: {
@@ -395,8 +393,6 @@ export default function UserProfileClient({
         console.error("Save failed:", errorData);
         throw new Error("Failed to save contacts");
       }
-
-      console.log("Successfully saved contacts to database");
     } catch (error) {
       console.error("Error saving contacts:", error);
     }
@@ -447,7 +443,6 @@ export default function UserProfileClient({
         (contact) => contact.email === targetUser.email,
       );
       if (existingContact) {
-        console.log("User is already a contact, skipping addition");
         return;
       }
 
@@ -471,8 +466,6 @@ export default function UserProfileClient({
 
       // Remove user from search results
       setSearchResults((prev) => prev.filter((u) => u.id !== targetUser.id));
-
-      console.log("✅ Contact added successfully");
     } catch (error) {
       console.error("Error adding contact:", error);
     } finally {
@@ -504,12 +497,6 @@ export default function UserProfileClient({
     const found = contacts.some(
       (contact) => contact.email === searchUser.email,
     );
-
-    console.log("🔍 Contact check:", {
-      searchingUserId: userId,
-      searchUserEmail: searchUser.email,
-      found: found,
-    });
 
     return found;
   };
@@ -662,10 +649,6 @@ export default function UserProfileClient({
 
       // Save the updated groups to database
       await saveContacts(updatedGroups, updatedContacts);
-
-      console.log(
-        "✅ Contact removed from both users and all groups successfully",
-      );
     } catch (error) {
       console.error("Error removing contact:", error);
     }

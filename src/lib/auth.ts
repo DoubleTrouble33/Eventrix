@@ -32,14 +32,12 @@ export async function auth() {
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-      console.log("No token found in cookies");
       return null;
     }
 
     // Verify the token
     const decoded = await verifyJwtToken(token);
     if (!decoded) {
-      console.log("Invalid or expired token");
       return null;
     }
 
@@ -58,13 +56,11 @@ export async function auth() {
       .where(eq(users.id, decoded.userId));
 
     if (!user) {
-      console.log("User not found in database");
       return null;
     }
 
     // Check if user is blocked
     if (user.isBlocked) {
-      console.log("User is blocked");
       return null;
     }
 

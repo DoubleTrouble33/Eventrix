@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { TimeInput } from "@/components/ui/time-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -143,21 +144,6 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
     e.preventDefault();
     setError(null);
 
-    // Add validation logging
-    console.log("Form validation:", {
-      title: title.trim(),
-      description,
-      startTime,
-      endTime,
-      isRepeating,
-      repeatDays,
-      repeatDuration,
-      isPublic,
-      selectedCalendarId,
-      currentUser: !!currentUser,
-      selectedGuests,
-    });
-
     if (!currentUser) {
       setError("No user data available");
       return;
@@ -258,16 +244,6 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           email: guest.email,
         })),
       };
-
-      console.log("Sending event data:", {
-        ...eventData,
-        startTimeLocal: startDateTime.format("YYYY-MM-DD HH:mm:ss"),
-        endTimeLocal: endDateTime.format("YYYY-MM-DD HH:mm:ss"),
-        repeatEndDateLocal:
-          isRepeating && repeatEndDate
-            ? repeatEndDate.format("YYYY-MM-DD")
-            : undefined,
-      }); // Debug log
 
       const response = await fetch("/api/events", {
         method: "POST",
@@ -450,33 +426,29 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label
-                htmlFor="start-time"
-                className="mb-2 block text-sm font-medium"
-              >
+              <label className="mb-2 block text-sm font-medium">
                 Start Time
+                <span className="ml-1 text-xs text-gray-500">
+                  (24-hour format)
+                </span>
               </label>
-              <Input
-                id="start-time"
-                type="time"
+              <TimeInput
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={setStartTime}
                 className="w-full"
                 required
               />
             </div>
             <div>
-              <label
-                htmlFor="end-time"
-                className="mb-2 block text-sm font-medium"
-              >
+              <label className="mb-2 block text-sm font-medium">
                 End Time
+                <span className="ml-1 text-xs text-gray-500">
+                  (24-hour format)
+                </span>
               </label>
-              <Input
-                id="end-time"
-                type="time"
+              <TimeInput
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                onChange={setEndTime}
                 className="w-full"
                 required
               />

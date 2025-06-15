@@ -5,17 +5,11 @@ import { eq } from "drizzle-orm";
 
 export async function POST() {
   try {
-    console.log("Starting cleanup of events with categoryId 'public'...");
-
     // Find all events with categoryId "public"
     const publicCategoryEvents = await db
       .select()
       .from(events)
       .where(eq(events.categoryId, "public"));
-
-    console.log(
-      `Found ${publicCategoryEvents.length} events with categoryId 'public'`,
-    );
 
     if (publicCategoryEvents.length === 0) {
       return NextResponse.json({
@@ -42,18 +36,11 @@ export async function POST() {
           .where(eq(events.id, event.id));
 
         updatedCount++;
-        console.log(
-          `Updated event ${event.id} from 'public' to 'personal' category`,
-        );
       } catch (eventError) {
         console.error(`Error updating event ${event.id}:`, eventError);
         errorCount++;
       }
     }
-
-    console.log(
-      `Event cleanup completed. Updated: ${updatedCount}, Errors: ${errorCount}`,
-    );
 
     return NextResponse.json({
       success: true,

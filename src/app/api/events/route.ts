@@ -42,8 +42,6 @@ export async function POST(request: Request) {
       guests = [],
     } = data;
 
-    console.log("Received event data:", data); // Debug log
-
     // Validate required fields
     if (!title || !startTime || !endTime || !calendarId) {
       return NextResponse.json(
@@ -79,8 +77,6 @@ export async function POST(request: Request) {
 
       const [event] = await db.insert(events).values(newEvent).returning();
 
-      console.log("Created event:", event); // Debug log
-
       // If there are guests, add them
       if (guests.length > 0) {
         await db.insert(eventGuests).values(
@@ -105,11 +101,6 @@ export async function POST(request: Request) {
               .from(eventGuests)
               .where(eq(eventGuests.eventId, event.id))
           : [];
-
-      console.log("Returning event with guests:", {
-        ...createdEvent,
-        guests: eventGuestsList,
-      }); // Debug log
 
       return NextResponse.json({
         event: {
@@ -138,20 +129,19 @@ export async function GET() {
     // Get authenticated user
     const session = await auth();
     if (!session || !session.user?.id) {
-      console.log("No authenticated session found");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("Fetching events for user:", session.user.id);
-
     try {
-      // Get events where user is the creator
+      // Get events where user is the creator (with reasonable limit)
       const userEvents = await db
         .select()
         .from(events)
-        .where(eq(events.userId, session.user.id));
+        .where(eq(events.userId, session.user.id))
+        .limit(100) // Limit to 100 events to reduce data transfer
+        .orderBy(events.createdAt);
 
-      // Get events where user is an accepted guest
+      // Get events where user is an accepted guest (with limit)
       const guestEvents = await db
         .select()
         .from(events)
@@ -161,7 +151,8 @@ export async function GET() {
             eq(eventGuests.email, session.user.email),
             eq(eventGuests.isAccepted, true),
           ),
-        );
+        )
+        .limit(50); // Limit guest events
 
       // Combine both sets of events, removing duplicates
       const allEvents = [
@@ -171,8 +162,6 @@ export async function GET() {
         (event, index, self) =>
           index === self.findIndex((e) => e.id === event.id),
       );
-
-      console.log("Found events:", allEvents);
 
       // Get guests for all events
       const eventIds = allEvents.map((event) => event.id);
@@ -184,7 +173,6 @@ export async function GET() {
             .select()
             .from(eventGuests)
             .where(inArray(eventGuests.eventId, eventIds));
-          console.log("Successfully fetched guests:", guests);
         } catch (guestError) {
           console.error("Error fetching guests:", guestError);
           // Continue without guests rather than failing completely
@@ -202,8 +190,6 @@ export async function GET() {
           : null,
         guests: guests.filter((guest) => guest.eventId === event.id),
       }));
-
-      console.log("Returning events with UTC dates:", eventsWithUTC);
 
       return NextResponse.json({ events: eventsWithUTC });
     } catch (dbError) {

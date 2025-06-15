@@ -35,8 +35,8 @@ export function CalendarEvent({ event }: CalendarEventProps) {
     >
       <div className="truncate font-medium">{event.title}</div>
       <div className="truncate text-gray-600">
-        {dayjs(event.startTime).format("h:mm A")} -{" "}
-        {dayjs(event.endTime).format("h:mm A")}
+        {dayjs(event.startTime).format("HH:mm")} -{" "}
+        {dayjs(event.endTime).format("HH:mm")}
       </div>
       {!calendar && (
         <div className="truncate text-xs text-gray-400 italic">

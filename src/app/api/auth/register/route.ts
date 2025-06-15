@@ -114,6 +114,11 @@ export async function POST(req: Request) {
     return response;
   } catch (error) {
     console.error("Registration error:", error);
+    // Log detailed error for debugging
+    if (error instanceof Error) {
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
       { message: "Error registering user" },
       { status: 500 },

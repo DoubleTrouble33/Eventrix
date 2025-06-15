@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all public events with creator information
+    // Fetch all public events with creator information (limited for performance)
     const publicEvents = await db
       .select({
         id: events.id,
@@ -33,7 +33,9 @@ export async function GET() {
       })
       .from(events)
       .leftJoin(users, eq(events.userId, users.id))
-      .where(eq(events.isPublic, true));
+      .where(eq(events.isPublic, true))
+      .limit(50) // Limit to 50 public events to reduce data transfer
+      .orderBy(events.createdAt);
 
     // Transform the data to match the expected format
     const formattedEvents = publicEvents.map((event) => ({

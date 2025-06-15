@@ -61,15 +61,15 @@ export function EventDetails({ event, onClose }: EventDetailsProps) {
                       {dayjs(event.startTime).format("MMMM D")} -{" "}
                       {dayjs(event.repeatEndDate).format("MMMM D, YYYY")}
                       <br />
-                      {dayjs(event.startTime).format("h:mm A")} -{" "}
-                      {dayjs(event.endTime).format("h:mm A")}
+                      {dayjs(event.startTime).format("HH:mm")} -{" "}
+                      {dayjs(event.endTime).format("HH:mm")}
                     </>
                   ) : (
                     <>
                       {dayjs(event.startTime).format("MMMM D, YYYY")}
                       <br />
-                      {dayjs(event.startTime).format("h:mm A")} -{" "}
-                      {dayjs(event.endTime).format("h:mm A")}
+                      {dayjs(event.startTime).format("HH:mm")} -{" "}
+                      {dayjs(event.endTime).format("HH:mm")}
                     </>
                   )}
                 </p>

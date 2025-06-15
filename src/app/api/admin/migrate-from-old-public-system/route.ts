@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    console.log("Starting migration from old public calendar system...");
-
     const results = {
       calendarsCleanup: null as Record<string, unknown> | null,
       eventsCleanup: null as Record<string, unknown> | null,
@@ -13,7 +11,6 @@ export async function POST() {
 
     // Step 1: Clean up public calendars from users
     try {
-      console.log("Step 1: Cleaning up public calendars...");
       const calendarsResponse = await fetch(
         `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/admin/cleanup-public-calendars`,
         {
@@ -24,7 +21,6 @@ export async function POST() {
 
       if (calendarsResponse.ok) {
         results.calendarsCleanup = await calendarsResponse.json();
-        console.log("Calendars cleanup completed successfully");
       } else {
         throw new Error(
           `Calendars cleanup failed: ${calendarsResponse.status}`,
@@ -39,7 +35,6 @@ export async function POST() {
 
     // Step 2: Clean up events with categoryId "public"
     try {
-      console.log("Step 2: Cleaning up event categoryIds...");
       const eventsResponse = await fetch(
         `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/admin/cleanup-public-events`,
         {
@@ -50,7 +45,6 @@ export async function POST() {
 
       if (eventsResponse.ok) {
         results.eventsCleanup = await eventsResponse.json();
-        console.log("Events cleanup completed successfully");
       } else {
         throw new Error(`Events cleanup failed: ${eventsResponse.status}`);
       }
@@ -60,8 +54,6 @@ export async function POST() {
       results.errors.push(errorMsg);
       results.success = false;
     }
-
-    console.log("Migration completed with results:", results);
 
     return NextResponse.json({
       success: results.success,

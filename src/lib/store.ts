@@ -111,14 +111,12 @@ interface CalendarStore {
 const defaultCategories: EventCategory[] = [
   { id: "personal", name: "Personal", color: "#3B82F6" }, // blue-500
   { id: "work", name: "Work", color: "#10B981" }, // emerald-500
-  { id: "fitness", name: "Fitness", color: "#EF4444" }, // red-500
 ];
 
 // Default calendars that come pre-loaded with the app
 const defaultCalendars: CalendarType[] = [
   { id: "personal", name: "Personal", color: "#3B82F6" },
   { id: "work", name: "Work", color: "#10B981" },
-  { id: "fitness", name: "Fitness", color: "#EF4444" },
 ];
 
 // Store for managing event categories

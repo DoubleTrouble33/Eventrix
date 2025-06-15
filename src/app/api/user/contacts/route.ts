@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -101,9 +101,6 @@ export async function PUT(request: Request) {
       );
     }
 
-    console.log("Updating contacts for user:", decoded.userId);
-    console.log("Contacts data:", JSON.stringify(contacts, null, 2));
-
     try {
       // Update the contacts directly without checking user existence first
       const [updatedUser] = await db
@@ -123,7 +120,6 @@ export async function PUT(request: Request) {
         );
       }
 
-      console.log("Successfully updated contacts for user:", decoded.userId);
       return new Response(JSON.stringify({ contacts: updatedUser.contacts }), {
         headers: { "Content-Type": "application/json" },
       });

@@ -32,11 +32,26 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Sanitize the body data - only allow specific fields to be updated
+    const allowedFields = {
+      title: body.title,
+      description: body.description,
+      startTime: body.startTime ? new Date(body.startTime) : undefined,
+      endTime: body.endTime ? new Date(body.endTime) : undefined,
+      isPublic: body.isPublic,
+      categoryId: body.categoryId,
+    };
+
+    // Remove undefined values to avoid updating with undefined
+    const updateData = Object.fromEntries(
+      Object.entries(allowedFields).filter(([, value]) => value !== undefined),
+    );
+
     // Update the event
     const [updatedEvent] = await db
       .update(events)
       .set({
-        ...body,
+        ...updateData,
         updatedAt: new Date(),
       })
       .where(eq(events.id, eventId))

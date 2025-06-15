@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
@@ -53,7 +53,6 @@ export async function GET() {
             .update(users)
             .set({ calendars })
             .where(eq(users.id, decoded.userId));
-          console.log("Removed old public calendar for user:", decoded.userId);
         } catch (updateError) {
           console.error("Error removing old public calendar:", updateError);
           // Continue anyway, just return the filtered calendars
@@ -121,9 +120,6 @@ export async function PUT(request: Request) {
       );
     }
 
-    console.log("Updating calendars for user:", decoded.userId);
-    console.log("Calendars data:", JSON.stringify(calendars, null, 2));
-
     try {
       // Update the calendars directly without checking user existence first
       const [updatedUser] = await db
@@ -143,7 +139,6 @@ export async function PUT(request: Request) {
         );
       }
 
-      console.log("Successfully updated calendars for user:", decoded.userId);
       return new Response(
         JSON.stringify({ calendars: updatedUser.calendars }),
         { headers: { "Content-Type": "application/json" } },

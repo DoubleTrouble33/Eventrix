@@ -38,7 +38,7 @@ export default function LoginPage() {
 
       if (response.ok && data.user) {
         // Successful login - redirect to dashboard
-        console.log("Login successful, redirecting to dashboard...");
+
         router.replace("/dashboard"); // Use replace instead of push to prevent going back to login
         router.refresh(); // Refresh to update auth state
       } else {
