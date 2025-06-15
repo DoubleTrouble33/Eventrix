@@ -313,7 +313,7 @@ export default function RightSide() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className="relative text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             onClick={(e) => e.preventDefault()}
           >
             <Bell className="h-5 w-5" />
@@ -447,7 +447,7 @@ export default function RightSide() {
         variant="ghost"
         size="icon"
         onClick={toggleTheme}
-        className="relative"
+        className="relative text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
         title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
       >
         {isDarkMode ? (

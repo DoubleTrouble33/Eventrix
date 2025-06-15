@@ -75,7 +75,7 @@ export default function LeftSide() {
       <div className="hidden items-center lg:flex">
         <Button
           variant="ghost"
-          className="rounded-full p-2 hover:cursor-pointer"
+          className="rounded-full p-2 text-gray-700 hover:cursor-pointer hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           onClick={() => setSideBarOpen()}
         >
           <Menu className="size-6"></Menu>
@@ -104,7 +104,7 @@ export default function LeftSide() {
       </div>
       {/* Today Button */}
       <Button
-        className="hover:cursor-pointer"
+        className="border-gray-300 text-gray-700 hover:cursor-pointer hover:bg-gray-50 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
         variant="outline"
         onClick={handleTodayClick}
       >
