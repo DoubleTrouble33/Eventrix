@@ -231,9 +231,13 @@ export default function RightSide() {
 
     try {
       const response = await fetch(
-        `/api/users/${user.id}/notifications/contact-requests/${notificationId}/accept`,
+        `/api/users/${user.id}/notifications/contact-requests/accept`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notificationId }),
           credentials: "include",
         },
       );
@@ -254,9 +258,13 @@ export default function RightSide() {
 
     try {
       const response = await fetch(
-        `/api/users/${user.id}/notifications/contact-requests/${notificationId}/decline`,
+        `/api/users/${user.id}/notifications/contact-requests/decline`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notificationId }),
           credentials: "include",
         },
       );

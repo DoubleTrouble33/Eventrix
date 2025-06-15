@@ -210,6 +210,7 @@ export async function GET() {
         repeatEndDate: event.repeatEndDate
           ? dayjs(event.repeatEndDate).tz(localTimezone).utc().toISOString()
           : null,
+        calendarId: event.calendarId || event.categoryId, // Ensure calendarId is included
         guests: guests.filter((guest) => guest.eventId === event.id),
       }));
 

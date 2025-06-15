@@ -18,12 +18,12 @@ export function Calendar({ currentDate }: CalendarProps) {
   // Filter events based on selected calendars
   const filteredEvents = events.filter((event) => {
     // Always show events with deleted calendars (orphaned events)
-    const calendarExists = calendars.some((cal) => cal.id === event.categoryId);
+    const calendarExists = calendars.some((cal) => cal.id === event.calendarId);
     if (!calendarExists) {
       return true; // Show orphaned events
     }
     // For existing calendars, check if they're selected
-    return selectedCalendars.includes(event.categoryId);
+    return selectedCalendars.includes(event.calendarId);
   });
 
   // Generate calendar grid

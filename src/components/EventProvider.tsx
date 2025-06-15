@@ -31,7 +31,7 @@ interface Event {
 
 export function EventProvider({ children }: { children: React.ReactNode }) {
   const { setEvents } = useEventStore();
-  const { selectedCalendars, setCalendars } = useCalendarStore();
+  const { selectedCalendars, setCalendars, calendars } = useCalendarStore();
   const { isPublicView } = usePublicPrivateToggleStore();
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +103,75 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        setEvents(allEvents);
+        // Filter events based on selected calendars
+        const filteredEvents = allEvents.filter((event: Event) => {
+          // Debug logging
+          console.log(
+            "Event:",
+            event.title,
+            "calendarId:",
+            event.calendarId,
+            "categoryId:",
+            (event as Event & { categoryId?: string }).categoryId,
+          );
+
+          // Always show events with deleted calendars (orphaned events)
+          const calendarExists = calendars.some(
+            (cal) => cal.id === event.calendarId,
+          );
+          if (!calendarExists) {
+            console.log("Event has deleted calendar, showing:", event.title);
+            return true; // Show orphaned events
+          }
+
+          // In PUBLIC view: Show events from selected calendars (both public and private)
+          if (isPublicView) {
+            const shouldShow = selectedCalendars.includes(event.calendarId);
+            if (event.isPublic) {
+              console.log(
+                "Public event, shouldShow:",
+                shouldShow,
+                "for:",
+                event.title,
+              );
+            } else {
+              console.log(
+                "Private event in public view, shouldShow:",
+                shouldShow,
+                "for:",
+                event.title,
+              );
+            }
+            return shouldShow;
+          }
+
+          // In PRIVATE view: Only show selected calendar events
+          const shouldShow = selectedCalendars.includes(event.calendarId);
+          console.log(
+            "Private view:",
+            event.title,
+            "shouldShow:",
+            shouldShow,
+            "selectedCalendars:",
+            selectedCalendars,
+          );
+          return shouldShow;
+        });
+
+        console.log(
+          "Filtered events count:",
+          filteredEvents.length,
+          "from",
+          allEvents.length,
+          "total events",
+        );
+        console.log("Selected calendars:", selectedCalendars);
+        console.log(
+          "Available calendars:",
+          calendars.map((c) => ({ id: c.id, name: c.name })),
+        );
+
+        setEvents(filteredEvents);
       } catch (error) {
         console.error("Error loading events:", error);
         setError(
@@ -113,7 +181,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     };
 
     loadEvents();
-  }, [setEvents, selectedCalendars, isPublicView]);
+  }, [setEvents, selectedCalendars, isPublicView, calendars]);
 
   if (error) {
     console.error("Error in EventProvider:", error);

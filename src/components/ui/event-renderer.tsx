@@ -23,7 +23,7 @@ export function EventRenderer({
   const [showOptions, setShowOptions] = useState(false);
   const timeFormat = "HH:mm"; // Always use 24-hour format
   const { calendars } = useCalendarStore();
-  const calendar = calendars.find((c) => c.id === event.categoryId);
+  const calendar = calendars.find((c) => c.id === event.calendarId);
 
   return (
     <div className="relative">

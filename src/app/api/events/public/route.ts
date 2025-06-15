@@ -25,6 +25,7 @@ export async function GET() {
         repeatDays: events.repeatDays,
         repeatEndDate: events.repeatEndDate,
         categoryId: events.categoryId,
+        calendarId: events.calendarId,
         createdAt: events.createdAt,
         updatedAt: events.updatedAt,
         creatorFirstName: users.firstName,
@@ -50,6 +51,7 @@ export async function GET() {
       repeatDays: event.repeatDays,
       repeatEndDate: event.repeatEndDate,
       categoryId: event.categoryId, // Keep original category
+      calendarId: event.calendarId || event.categoryId, // Use calendarId or fallback to categoryId
       createdAt: event.createdAt,
       updatedAt: event.updatedAt,
       creatorName: `${event.creatorFirstName} ${event.creatorLastName}`,

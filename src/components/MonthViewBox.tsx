@@ -1,10 +1,5 @@
 import { cn } from "@/lib/utils";
-import {
-  getEventsForDay,
-  useEventStore,
-  useCalendarStore,
-  usePublicPrivateToggleStore,
-} from "@/lib/store";
+import { getEventsForDay, useEventStore } from "@/lib/store";
 import dayjs from "dayjs";
 import React, { useState } from "react";
 import { EventPopover } from "./ui/event-popover";
@@ -22,9 +17,6 @@ export default function MonthViewBox({
   const [showEventPopover, setShowEventPopover] = useState(false);
   const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
 
-  const { selectedCalendars, calendars } = useCalendarStore();
-  const { isPublicView } = usePublicPrivateToggleStore();
-
   if (!day) {
     return (
       <div className="h-12 w-full border md:h-28 md:w-full lg:h-full"></div>
@@ -34,32 +26,8 @@ export default function MonthViewBox({
   const isFirstDayOfMonth = day?.date() === 1;
   const isToday = day.format("DD-MM-YY") === dayjs().format("DD-MM-YY");
 
-  // Filter events for this day based on public/private view and selected calendars
-  const dayEvents = getEventsForDay(events, day).filter((event) => {
-    // In PUBLIC view: Show public events + selected calendar events
-    if (isPublicView) {
-      // Show public events regardless of calendar selection
-      if (event.isPublic) {
-        return true;
-      }
-      // Also show user's selected calendar events
-      return selectedCalendars.includes(event.calendarId);
-    }
-
-    // In PRIVATE view: Only show selected calendar events
-    if (selectedCalendars.length === 0) {
-      return false; // No calendars selected, show nothing
-    }
-
-    // Always show events with deleted calendars (orphaned events)
-    const calendarExists = calendars.some((cal) => cal.id === event.calendarId);
-    if (!calendarExists) {
-      return true; // Show orphaned events
-    }
-
-    // Only show events from selected calendars
-    return selectedCalendars.includes(event.calendarId);
-  });
+  // Get events for this day - EventProvider already handles filtering
+  const dayEvents = getEventsForDay(events, day);
 
   const handleEventClick = (event: CalendarEventType) => {
     setSelectedEvent(event);

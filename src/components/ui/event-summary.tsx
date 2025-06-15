@@ -341,11 +341,11 @@ export function EventSummary() {
 
   if (!selectedEvent) return null;
 
-  const calendar = calendars.find((c) => c.id === selectedEvent.categoryId);
+  const calendar = calendars.find((c) => c.id === selectedEvent.calendarId);
 
   // Fallback for events with deleted calendars
   const fallbackCalendar = {
-    id: selectedEvent.categoryId,
+    id: selectedEvent.calendarId,
     name: "Deleted Calendar",
     color: "#6B7280",
   };

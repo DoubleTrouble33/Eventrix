@@ -13,7 +13,7 @@ export function CalendarEvent({ event }: CalendarEventProps) {
   const { calendars } = useCalendarStore();
   const { setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
 
-  const calendar = calendars.find((c) => c.id === event.categoryId);
+  const calendar = calendars.find((c) => c.id === event.calendarId);
 
   // Fallback styling for events with deleted calendars
   const fallbackColor = "#6B7280"; // Gray color for orphaned events

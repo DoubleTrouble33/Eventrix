@@ -1,10 +1,5 @@
 import { getHours, getWeekDays, isCurrentDay } from "@/lib/getTime";
-import {
-  useDateStore,
-  useEventStore,
-  getEventsForDay,
-  useCalendarStore,
-} from "@/lib/store";
+import { useDateStore, useEventStore, getEventsForDay } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
@@ -18,8 +13,6 @@ export default function WeekView() {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { events, setSelectedEvent, setIsEventSummaryOpen } = useEventStore();
   const { userSelectedDate } = useDateStore();
-  const { selectedCalendars } = useCalendarStore();
-  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const [showEventPopover, setShowEventPopover] = useState(false);
   const [selectedHour, setSelectedHour] = useState<dayjs.Dayjs | null>(null);
   const [selectedDay, setSelectedDay] = useState<dayjs.Dayjs | null>(null);
@@ -29,25 +22,6 @@ export default function WeekView() {
       setCurrentTime(dayjs());
     }, 60000); // Update every minute
     return () => clearInterval(interval);
-  }, []);
-
-  // Fetch current user data
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/auth/user", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentUser(data.user);
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
-    fetchUser();
   }, []);
 
   const handleEventClick = (event: CalendarEventType) => {
@@ -108,26 +82,7 @@ export default function WeekView() {
                 const dayEvents = getEventsForDay(events, currentDate).filter(
                   (event) => {
                     const eventHour = dayjs(event.startTime).hour();
-                    const hourMatch = eventHour === hour.hour();
-
-                    // Always show events with deleted calendars (orphaned events)
-                    const { calendars } = useCalendarStore.getState();
-                    const calendarExists = calendars.some(
-                      (cal) => cal.id === event.categoryId,
-                    );
-                    if (!calendarExists) {
-                      return hourMatch; // Show orphaned events if hour matches
-                    }
-
-                    const calendarMatch =
-                      selectedCalendars.length > 0 &&
-                      selectedCalendars.includes(event.categoryId);
-                    const isGuest =
-                      currentUser &&
-                      event.guests?.some(
-                        (guest) => guest.id === currentUser.id,
-                      );
-                    return hourMatch && (calendarMatch || isGuest);
+                    return eventHour === hour.hour();
                   },
                 );
 
