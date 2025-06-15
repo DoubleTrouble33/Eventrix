@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -32,6 +32,8 @@ export default function LandingPage() {
     avatar: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -64,6 +66,23 @@ export default function LandingPage() {
     fetchUser();
   }, []);
 
+  // Sync video state with actual video element
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => setIsVideoPlaying(true);
+    const handlePause = () => setIsVideoPlaying(false);
+
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       const response = await fetch("/api/auth/logout", {
@@ -87,6 +106,26 @@ export default function LandingPage() {
   const isDayWeekend = (date: Date) => {
     const day = date.getDay();
     return day === 0 || day === 6;
+  };
+
+  // Function to handle video play/pause
+  const handleVideoClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (videoRef.current) {
+      try {
+        if (isVideoPlaying) {
+          await videoRef.current.pause();
+          setIsVideoPlaying(false);
+        } else {
+          await videoRef.current.play();
+          setIsVideoPlaying(true);
+        }
+      } catch (error) {
+        console.error("Error controlling video:", error);
+      }
+    }
   };
 
   return (
@@ -204,9 +243,9 @@ export default function LandingPage() {
 
         {/* Calendar and Preview Section - Modified */}
         <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-1">
             {/* Left Side - Calendar */}
-            <div className="flex items-center justify-center">
+            {/* <div className="flex items-center justify-center">
               <div className="w-full rounded-xl bg-white p-6 shadow-lg ring-1 ring-gray-200">
                 <div className="mb-4 flex items-center gap-3 border-b pb-3">
                   <CalendarIcon className="h-5 w-5 text-indigo-600" />
@@ -251,23 +290,44 @@ export default function LandingPage() {
                   />
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Right Side - Preview (Enlarged) */}
             <div className="flex flex-col">
               <div className="h-full w-full rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 p-6">
-                <div className="h-full w-full overflow-hidden rounded-lg shadow-lg">
+                <div
+                  className="group relative h-full w-full cursor-pointer overflow-hidden rounded-lg shadow-lg"
+                  onClick={handleVideoClick}
+                >
                   <video
+                    ref={videoRef}
                     autoPlay
                     loop
                     muted
                     playsInline
                     preload="metadata"
-                    className="h-full w-full object-contain"
+                    className="pointer-events-none h-full w-full object-contain"
                   >
                     <source src="/intro-demo.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
+                  {/* Play/Pause overlay indicator */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <div className="rounded-full bg-black/50 p-4 backdrop-blur-sm">
+                      {isVideoPlaying ? (
+                        <div className="flex h-8 w-8 items-center justify-center">
+                          <div className="flex gap-1">
+                            <div className="h-6 w-2 rounded-sm bg-white"></div>
+                            <div className="h-6 w-2 rounded-sm bg-white"></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center">
+                          <div className="ml-1 h-0 w-0 border-t-[8px] border-b-[8px] border-l-[12px] border-t-transparent border-b-transparent border-l-white"></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-6 flex justify-center">
                   <Button
