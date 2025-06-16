@@ -51,7 +51,18 @@ export const users = pgTable("users", {
       };
     }>()
     .default({
-      organized: {},
+      organized: {
+        work: {
+          name: "Work",
+          color: "#10B981",
+          memberIds: [],
+        },
+        personal: {
+          name: "Personal",
+          color: "#3B82F6",
+          memberIds: [],
+        },
+      },
       unorganized: {},
     }),
   notifications: jsonb("notifications")

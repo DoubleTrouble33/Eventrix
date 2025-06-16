@@ -398,10 +398,17 @@ export default function UserProfileClient({
     }
   };
 
-  // Load contacts on component mount
+  // Load contacts on component mount and when switching to contacts tab
   useEffect(() => {
     loadContacts();
   }, []);
+
+  // Reload contacts when switching to contacts tab to ensure fresh data
+  useEffect(() => {
+    if (activeTab === "contacts") {
+      loadContacts();
+    }
+  }, [activeTab]);
 
   // Search for users to invite
   const searchUsers = async (query: string, showAll: boolean = false) => {

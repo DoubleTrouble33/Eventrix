@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
-  "id": "493b62f1-6805-45fe-a6dc-6478d5683e6e",
-=======
-  "id": "0003_snapshot",
->>>>>>> 250bb156fbdffdacfe45f028046a440a4fb3a176
+  "id": "af28b54c-498d-4d58-92e6-870dfc2eccd3",
   "prevId": "f382d631-af04-49c1-98c5-9390e03db533",
   "version": "7",
   "dialect": "postgresql",
@@ -44,7 +40,6 @@
           "notNull": true,
           "default": false
         },
-<<<<<<< HEAD
         "is_accepted": {
           "name": "is_accepted",
           "type": "boolean",
@@ -52,8 +47,6 @@
           "notNull": true,
           "default": false
         },
-=======
->>>>>>> 250bb156fbdffdacfe45f028046a440a4fb3a176
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -83,7 +76,6 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-<<<<<<< HEAD
     },
     "public.events": {
       "name": "events",
@@ -151,6 +143,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "calendar_id": {
+          "name": "calendar_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "category_id": {
           "name": "category_id",
@@ -230,12 +228,47 @@
           "primaryKey": false,
           "notNull": true
         },
+        "avatar": {
+          "name": "avatar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'/img/avatar-demo.png'"
+        },
+        "is_admin": {
+          "name": "is_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_blocked": {
+          "name": "is_blocked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "calendars": {
           "name": "calendars",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false,
-          "default": "'[{\"id\":\"public\",\"name\":\"Public Events\",\"color\":\"#4CAF50\",\"isDefault\":true},{\"id\":\"personal\",\"name\":\"Personal\",\"color\":\"#3B82F6\"},{\"id\":\"work\",\"name\":\"Work\",\"color\":\"#10B981\"},{\"id\":\"fitness\",\"name\":\"Fitness\",\"color\":\"#EF4444\"}]'::jsonb"
+          "default": "'[{\"id\":\"personal\",\"name\":\"Personal\",\"color\":\"#3B82F6\"},{\"id\":\"work\",\"name\":\"Work\",\"color\":\"#10B981\"}]'::jsonb"
+        },
+        "contacts": {
+          "name": "contacts",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{\"organized\":{\"work\":{\"name\":\"Work\",\"color\":\"#10B981\",\"memberIds\":[]},\"personal\":{\"name\":\"Personal\",\"color\":\"#3B82F6\",\"memberIds\":[]}},\"unorganized\":{}}'::jsonb"
+        },
+        "notifications": {
+          "name": "notifications",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -281,8 +314,3 @@
     "tables": {}
   }
 }
-=======
-    }
-  }
-} 
->>>>>>> 250bb156fbdffdacfe45f028046a440a4fb3a176

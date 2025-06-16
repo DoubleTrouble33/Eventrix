@@ -324,7 +324,7 @@ export function LeftSide() {
           </div>
         </div>
 
-        <Image
+        {/* <Image
           src={
             isDarkMode ? "/img/Eventrix-dark-theme.png" : "/img/Eventrix.svg"
           }
@@ -332,7 +332,7 @@ export function LeftSide() {
           width={120}
           height={40}
           className="mt-4 h-10 w-auto"
-        />
+        /> */}
       </div>
     </div>
   );
