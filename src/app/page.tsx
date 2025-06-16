@@ -3,15 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  ArrowRight,
-  Calendar as CalendarIcon,
-  User,
-  LogOut,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { ArrowRight, User, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,7 +16,6 @@ import { useState, useEffect, useRef } from "react";
 
 export default function LandingPage() {
   const router = useRouter();
-  const today = new Date();
   const [user, setUser] = useState<{
     id: string;
     firstName: string;
@@ -100,12 +91,6 @@ export default function LandingPage() {
     } catch (error) {
       console.error("Logout error:", error);
     }
-  };
-
-  // Function to style weekends
-  const isDayWeekend = (date: Date) => {
-    const day = date.getDay();
-    return day === 0 || day === 6;
   };
 
   // Function to handle video play/pause
@@ -238,6 +223,157 @@ export default function LandingPage() {
               intuitive platform helps you plan, schedule, and organize events
               with precision and ease.
             </p>
+          </div>
+        </div>
+
+        {/* Technology Stack Carousel */}
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              Built with Modern Technologies
+            </h2>
+            <p className="mt-2 text-gray-600">
+              Powered by industry-leading tools and frameworks
+            </p>
+          </div>
+
+          {/* Carousel Container */}
+          <div className="relative overflow-hidden">
+            <div className="animate-scroll flex space-x-8">
+              {/* First set of logos */}
+              <div className="flex shrink-0 items-center justify-around space-x-8">
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/next-js.png"
+                    alt="Next.js"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/Typescript.png"
+                    alt="TypeScript"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/tailwind.png"
+                    alt="Tailwind CSS"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/shadCN.png"
+                    alt="ShadCN UI"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/postgreSQL.png"
+                    alt="PostgreSQL"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/drizzle-orm.png"
+                    alt="Drizzle ORM"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/neon.png"
+                    alt="Neon"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+              </div>
+
+              {/* Duplicate set for seamless loop */}
+              <div className="flex shrink-0 items-center justify-around space-x-8">
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/next-js.png"
+                    alt="Next.js"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/Typescript.png"
+                    alt="TypeScript"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/tailwind.png"
+                    alt="Tailwind CSS"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/shadCN.png"
+                    alt="ShadCN UI"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/postgreSQL.png"
+                    alt="PostgreSQL"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/drizzle-orm.png"
+                    alt="Drizzle ORM"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+                <div className="flex h-16 w-20 items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-gray-200 transition-transform hover:scale-105">
+                  <Image
+                    src="/carousel/neon.png"
+                    alt="Neon"
+                    width={60}
+                    height={40}
+                    className="h-auto max-h-10 w-auto max-w-16 object-contain"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
