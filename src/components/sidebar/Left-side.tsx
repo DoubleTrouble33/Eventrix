@@ -4,7 +4,8 @@ import { useState } from "react";
 import {
   useCalendarStore,
   usePublicPrivateToggleStore,
-  useThemeStore,
+  useDateStore,
+  useViewStore,
 } from "@/lib/store";
 import { Button } from "../ui/button";
 import {
@@ -20,14 +21,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "../ui/input";
-import { useDateStore } from "@/lib/store";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Image from "next/image";
 
 export function LeftSide() {
   const {
@@ -47,9 +46,9 @@ export function LeftSide() {
     name: string;
     color: string;
   } | null>(null);
-  const { currentDate } = useDateStore();
+  const { currentDate, setDate, setMonth } = useDateStore();
   const { isPublicView } = usePublicPrivateToggleStore();
-  const { isDarkMode } = useThemeStore();
+  const { selectedView } = useViewStore();
 
   const handleAddCalendar = () => {
     if (newCalendarName.trim()) {
@@ -82,6 +81,29 @@ export function LeftSide() {
     e.preventDefault();
     e.stopPropagation();
     toggleCalendar(calendarId);
+  };
+
+  const handleDateDoubleClick = (day: number | null) => {
+    if (!day) return;
+
+    const selectedDate = currentDate.date(day);
+
+    switch (selectedView) {
+      case "month":
+        // For month view, navigate to the month of the selected date
+        setMonth(selectedDate.month());
+        break;
+      case "week":
+        // For week view, navigate to the week containing the selected date
+        setDate(selectedDate);
+        break;
+      case "day":
+        // For day view, navigate to the specific selected date
+        setDate(selectedDate);
+        break;
+      default:
+        break;
+    }
   };
 
   // Generate calendar grid
@@ -133,19 +155,17 @@ export function LeftSide() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                if (selectedCalendars.length === calendars.length) {
-                  // If all are selected, deselect all
+                if (selectedCalendars.length > 0) {
+                  // If any are selected, deselect all
                   setSelectedCalendars([]);
                 } else {
-                  // Otherwise, select all
+                  // If none are selected, select all
                   setSelectedCalendars(calendars.map((cal) => cal.id));
                 }
               }}
               className="text-xs text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             >
-              {selectedCalendars.length === calendars.length
-                ? "Deselect All"
-                : "Select All"}
+              {selectedCalendars.length > 0 ? "Deselect All" : "Select All"}
             </Button>
           </div>
           <div className="space-y-2">
@@ -317,22 +337,13 @@ export function LeftSide() {
                   day === currentDate.date() &&
                     "bg-blue-100 dark:bg-blue-900/50",
                 )}
+                onDoubleClick={() => handleDateDoubleClick(day)}
               >
                 {day}
               </div>
             ))}
           </div>
         </div>
-
-        {/* <Image
-          src={
-            isDarkMode ? "/img/Eventrix-dark-theme.png" : "/img/Eventrix.svg"
-          }
-          alt="Eventrix Logo"
-          width={120}
-          height={40}
-          className="mt-4 h-10 w-auto"
-        /> */}
       </div>
     </div>
   );

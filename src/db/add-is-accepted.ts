@@ -7,14 +7,11 @@ async function addIsAcceptedColumn() {
   const sql = postgres(process.env.DATABASE_URL!, { max: 1 });
 
   try {
-    console.log("Adding is_accepted column to event_guests table...");
-
-    await sql.unsafe`
+    // Add is_accepted column with default value true
+    await sql`
       ALTER TABLE event_guests 
-      ADD COLUMN IF NOT EXISTS is_accepted BOOLEAN NOT NULL DEFAULT FALSE;
+      ADD COLUMN IF NOT EXISTS is_accepted BOOLEAN DEFAULT true
     `;
-
-    console.log("Column added successfully!");
   } catch (error) {
     console.error("Error adding column:", error);
   } finally {
@@ -22,4 +19,7 @@ async function addIsAcceptedColumn() {
   }
 }
 
-addIsAcceptedColumn().catch(console.error);
+// Run the script if this file is executed directly
+if (require.main === module) {
+  addIsAcceptedColumn().catch(console.error);
+}

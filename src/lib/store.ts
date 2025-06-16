@@ -362,9 +362,6 @@ export const useCalendarStore = create<CalendarStore>()(
       },
       toggleCalendar: (calendarId) =>
         set((state) => {
-          console.log("toggleCalendar called with:", calendarId);
-          console.log("Current selectedCalendars:", state.selectedCalendars);
-
           // Don't allow toggling the "public" calendar
           if (calendarId === "public") return state;
 
@@ -372,14 +369,6 @@ export const useCalendarStore = create<CalendarStore>()(
           const newSelectedCalendars = isSelected
             ? state.selectedCalendars.filter((id) => id !== calendarId)
             : [...state.selectedCalendars, calendarId];
-
-          console.log("New selectedCalendars:", newSelectedCalendars);
-
-          // Ensure we always have at least one calendar selected
-          if (newSelectedCalendars.length === 0) {
-            console.log("Preventing empty calendar selection");
-            return state;
-          }
 
           return { selectedCalendars: newSelectedCalendars };
         }),
@@ -454,11 +443,6 @@ export const useCalendarStore = create<CalendarStore>()(
           const newSelectedCalendars = state.selectedCalendars.filter(
             (id) => id !== calendarId,
           );
-
-          // Ensure we always have at least one calendar selected
-          if (newSelectedCalendars.length === 0) {
-            return state;
-          }
 
           return {
             calendars: newCalendars,
