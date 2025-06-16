@@ -10,6 +10,7 @@ import {
   useToggleSideBarStore,
   useViewStore,
   usePublicPrivateToggleStore,
+  useThemeStore,
 } from "@/lib/store";
 import dayjs from "dayjs";
 
@@ -20,6 +21,7 @@ export default function LeftSide() {
   const { setSideBarOpen } = useToggleSideBarStore();
   const { selectedView } = useViewStore();
   const { isPublicView, toggleView } = usePublicPrivateToggleStore();
+  const { isDarkMode } = useThemeStore();
 
   const handleTodayClick = () => {
     switch (selectedView) {
@@ -87,7 +89,9 @@ export default function LeftSide() {
           style={{ borderRadius: "8px" }}
         >
           <Image
-            src={"/img/Eventrix.svg"}
+            src={
+              isDarkMode ? "/img/Eventrix-dark-theme.png" : "/img/Eventrix.svg"
+            }
             width={100}
             height={50}
             alt="company logo"
