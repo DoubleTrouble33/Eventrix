@@ -12,9 +12,9 @@ import type { InferModel } from "drizzle-orm";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Set the timezone to local
-const localTimezone = dayjs.tz.guess();
-dayjs.tz.setDefault(localTimezone);
+// Don't set default timezone on server - let client handle it
+// const localTimezone = dayjs.tz.guess();
+// dayjs.tz.setDefault(localTimezone);
 
 // Define the type for event insertion
 type NewEvent = InferModel<typeof events, "insert">;
@@ -72,15 +72,22 @@ export async function POST(request: Request) {
         );
       }
 
-      // Convert dates to UTC for storage
-      const startTimeUTC = dayjs(startTime)
-        .tz(localTimezone)
-        .utc()
-        .toISOString();
-      const endTimeUTC = dayjs(endTime).tz(localTimezone).utc().toISOString();
+      // Convert dates to UTC for storage - assume incoming dates are ISO strings or properly formatted
+      // The client should send properly formatted datetime strings
+      console.log("Received from client:", { startTime, endTime });
+
+      const startTimeUTC = dayjs(startTime).utc().toISOString();
+      const endTimeUTC = dayjs(endTime).utc().toISOString();
       const repeatEndDateUTC = repeatEndDate
-        ? dayjs(repeatEndDate).tz(localTimezone).utc().toISOString()
+        ? dayjs(repeatEndDate).utc().toISOString()
         : null;
+
+      console.log("Converting to UTC:", {
+        startTimeUTC,
+        endTimeUTC,
+        originalStart: startTime,
+        originalEnd: endTime,
+      });
 
       // Create the event with proper typing
       const newEvent: NewEvent = {
@@ -257,19 +264,17 @@ export async function GET() {
         }
       }
 
-      // Convert dates to UTC and attach guests to their respective events
-      const eventsWithUTC = allEvents.map((event) => ({
+      // Return events with proper timezone handling - events are already stored in UTC
+      const eventsWithCorrectTime = allEvents.map((event) => ({
         ...event,
-        startTime: dayjs(event.startTime).tz(localTimezone).utc().toISOString(),
-        endTime: dayjs(event.endTime).tz(localTimezone).utc().toISOString(),
-        repeatEndDate: event.repeatEndDate
-          ? dayjs(event.repeatEndDate).tz(localTimezone).utc().toISOString()
-          : null,
+        startTime: event.startTime, // Already in UTC from database
+        endTime: event.endTime, // Already in UTC from database
+        repeatEndDate: event.repeatEndDate, // Already in UTC from database
         calendarId: event.calendarId || event.categoryId, // Ensure calendarId is included
         guests: guests.filter((guest) => guest.eventId === event.id),
       }));
 
-      return NextResponse.json({ events: eventsWithUTC });
+      return NextResponse.json({ events: eventsWithCorrectTime });
     } catch (dbError) {
       console.error("Database error details:", dbError);
       return NextResponse.json(

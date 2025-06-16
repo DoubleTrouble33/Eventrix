@@ -40,6 +40,9 @@ export function EventRenderer({
       }
     : {};
 
+  // Get event color with fallback
+  const eventColor = calendar?.color || "#6B7280";
+
   return (
     <div className={cn("relative", isSpanned && "w-full")} style={spanStyle}>
       <button
@@ -52,9 +55,9 @@ export function EventRenderer({
           isSpanned && "flex h-full flex-col justify-start py-1",
         )}
         style={{
-          backgroundColor: calendar?.color + "20", // Add 20% opacity
-          color: calendar?.color,
-          borderLeft: `3px solid ${calendar?.color}`,
+          backgroundColor: eventColor + "20", // Add 20% opacity
+          color: eventColor,
+          borderLeft: `3px solid ${eventColor}`,
         }}
       >
         <div
@@ -76,7 +79,7 @@ export function EventRenderer({
           </span>
         </div>
         {event.isRepeating && variant !== "month" && (
-          <div className="text-[0.6rem]" style={{ color: calendar?.color }}>
+          <div className="text-[0.6rem]" style={{ color: eventColor }}>
             (Repeating)
           </div>
         )}

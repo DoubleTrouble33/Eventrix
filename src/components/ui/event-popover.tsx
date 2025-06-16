@@ -183,18 +183,28 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
       const [startHours, startMinutes] = startTime.split(":").map(Number);
       const [endHours, endMinutes] = endTime.split(":").map(Number);
 
-      // Create start and end time by combining the selected date with the time
+      // Create start time by combining the selected date with the time
       const startDateTime = selectedDate
         .hour(startHours)
         .minute(startMinutes)
         .second(0)
         .millisecond(0);
 
-      const endDateTime = selectedDate
+      // Create end time - handle midnight crossover
+      let endDateTime = selectedDate
         .hour(endHours)
         .minute(endMinutes)
         .second(0)
         .millisecond(0);
+
+      // If end time is before start time, it means the event crosses midnight
+      // So the end time is on the next day
+      if (
+        endDateTime.isBefore(startDateTime) ||
+        (endHours === 0 && endMinutes === 0)
+      ) {
+        endDateTime = endDateTime.add(1, "day");
+      }
 
       // Calculate the end date based on repeat duration
       let repeatEndDate: dayjs.Dayjs | undefined;
@@ -254,6 +264,14 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           email: guest.email,
         })),
       };
+
+      console.log("Client sending to server:", {
+        startTime: eventData.startTime,
+        endTime: eventData.endTime,
+        localStartTime: startDateTime.format("YYYY-MM-DD HH:mm:ss"),
+        localEndTime: endDateTime.format("YYYY-MM-DD HH:mm:ss"),
+        timezone: dayjs.tz.guess(),
+      });
 
       const response = await fetch("/api/events", {
         method: "POST",

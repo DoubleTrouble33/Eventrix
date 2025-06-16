@@ -14,9 +14,9 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Set the timezone to local
-const localTimezone = dayjs.tz.guess();
-dayjs.tz.setDefault(localTimezone);
+// Don't set default timezone - let each conversion be explicit
+// const localTimezone = dayjs.tz.guess();
+// dayjs.tz.setDefault(localTimezone);
 
 interface Event {
   id: string;
