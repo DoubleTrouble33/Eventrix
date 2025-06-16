@@ -44,3 +44,27 @@ export const getWeekDays = (date: dayjs.Dayjs) => {
 export const getHours = Array.from({ length: 24 }, (_, i) =>
   dayjs().startOf("day").add(i, "hour"),
 );
+
+// Helper function to calculate the top position of an event based on its start time
+// Each hour takes 64px (h-16), so we calculate the position within that hour
+export const calculateEventTop = (startTime: string): number => {
+  const start = dayjs(startTime);
+  const hour = start.hour();
+  const minutes = start.minute();
+
+  // Each hour is 64px tall, each minute is 64/60 px
+  return hour * 64 + (minutes * 64) / 60;
+};
+
+// Helper function to calculate the height of an event based on its duration
+export const calculateEventHeight = (
+  startTime: string,
+  endTime: string,
+): number => {
+  const start = dayjs(startTime);
+  const end = dayjs(endTime);
+  const durationInMinutes = end.diff(start, "minute");
+
+  // Each minute is 64/60 px (since each hour is 64px)
+  return Math.max((durationInMinutes * 64) / 60, 20); // Minimum height of 20px
+};

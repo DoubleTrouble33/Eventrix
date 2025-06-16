@@ -4,6 +4,7 @@ import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { useCalendarStore } from "@/lib/store";
+import { calculateEventTop, calculateEventHeight } from "@/lib/getTime";
 
 interface EventRendererProps {
   event: CalendarEventType;
@@ -11,6 +12,7 @@ interface EventRendererProps {
   onClick?: (event: CalendarEventType) => void;
   onEdit?: (event: CalendarEventType) => void;
   onDelete?: (event: CalendarEventType) => void;
+  isSpanned?: boolean; // For time-based views where events span multiple time slots
 }
 
 export function EventRenderer({
@@ -19,14 +21,27 @@ export function EventRenderer({
   onClick,
   onEdit,
   onDelete,
+  isSpanned = false,
 }: EventRendererProps) {
   const [showOptions, setShowOptions] = useState(false);
   const timeFormat = "HH:mm"; // Always use 24-hour format
   const { calendars } = useCalendarStore();
   const calendar = calendars.find((c) => c.id === event.calendarId);
 
+  // Calculate positioning for spanned events in time views
+  const spanStyle = isSpanned
+    ? {
+        position: "absolute" as const,
+        top: `${calculateEventTop(event.startTime)}px`,
+        height: `${calculateEventHeight(event.startTime, event.endTime)}px`,
+        left: "4px",
+        right: "4px",
+        zIndex: 10,
+      }
+    : {};
+
   return (
-    <div className="relative">
+    <div className={cn("relative", isSpanned && "w-full")} style={spanStyle}>
       <button
         onClick={() => onClick?.(event)}
         className={cn(
@@ -34,6 +49,7 @@ export function EventRenderer({
           variant === "month" && "py-0",
           variant === "week" && "py-1",
           variant === "day" && "py-2",
+          isSpanned && "flex h-full flex-col justify-start py-1",
         )}
         style={{
           backgroundColor: calendar?.color + "20", // Add 20% opacity
@@ -41,14 +57,23 @@ export function EventRenderer({
           borderLeft: `3px solid ${calendar?.color}`,
         }}
       >
-        <div className="flex items-center">
+        <div
+          className={cn(
+            "flex items-center",
+            isSpanned && "flex-col items-start",
+          )}
+        >
           {variant !== "month" && (
-            <span className="mr-1 font-medium">
+            <span
+              className={cn("mr-1 font-medium", isSpanned && "mr-0 text-xs")}
+            >
               {dayjs(event.startTime).format(timeFormat)}
               {event.endTime && `-${dayjs(event.endTime).format(timeFormat)}`}
             </span>
           )}
-          <span>{event.title}</span>
+          <span className={cn("truncate", isSpanned && "text-xs font-medium")}>
+            {event.title}
+          </span>
         </div>
         {event.isRepeating && variant !== "month" && (
           <div className="text-[0.6rem]" style={{ color: calendar?.color }}>

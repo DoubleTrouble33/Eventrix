@@ -82,59 +82,58 @@ export default function DayView() {
           </div>
 
           <div className="relative border-r border-gray-300 dark:border-gray-600">
-            {getHours.map((hour, i) => {
-              const dayEvents = getEventsForDay(
-                events,
-                userSelectedDate,
-              ).filter((event) => {
-                const eventHour = dayjs(event.startTime).hour();
-                return eventHour === hour.hour();
-              });
+            {/* Get all events for this day */}
+            {(() => {
+              const dayEvents = getEventsForDay(events, userSelectedDate);
 
               return (
-                <div
-                  key={i}
-                  className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                  onClick={() => {
-                    if (dayEvents.length === 0) {
-                      handleAddEvent(hour);
-                    }
-                  }}
-                >
-                  {/* Center Plus Button */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddEvent(hour);
-                      }}
-                      className="invisible rounded-full p-2 transition-all duration-200 ease-in-out group-hover:visible hover:scale-110"
+                <>
+                  {/* Hour grid slots */}
+                  {getHours.map((hour, i) => (
+                    <div
+                      key={i}
+                      className="group relative flex h-16 cursor-pointer border-b border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                      onClick={() => handleAddEvent(hour)}
                     >
-                      <PlusCircle className="h-6 w-6 text-emerald-500 transition-colors hover:text-emerald-600" />
-                    </button>
-                  </div>
+                      {/* Center Plus Button */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddEvent(hour);
+                          }}
+                          className="invisible rounded-full p-2 transition-all duration-200 ease-in-out group-hover:visible hover:scale-110"
+                        >
+                          <PlusCircle className="h-6 w-6 text-emerald-500 transition-colors hover:text-emerald-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
 
+                  {/* Render all events for this day with absolute positioning */}
                   {dayEvents.map((event) => (
                     <EventRenderer
                       key={event.id}
                       event={event}
                       onClick={handleEventClick}
                       variant="day"
+                      isSpanned={true}
                     />
                   ))}
-                </div>
-              );
-            })}
 
-            {/* Current time indicator */}
-            {isCurrentDay(userSelectedDate) && (
-              <div
-                className={cn("absolute h-0.5 w-full bg-red-500")}
-                style={{
-                  top: `${(currentTime.hour() / 24) * 100}%`,
-                }}
-              />
-            )}
+                  {/* Current time indicator */}
+                  {isCurrentDay(userSelectedDate) && (
+                    <div
+                      className={cn("absolute h-0.5 w-full bg-red-500")}
+                      style={{
+                        top: `${currentTime.hour() * 64 + (currentTime.minute() * 64) / 60}px`,
+                        zIndex: 20,
+                      }}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </ScrollArea>

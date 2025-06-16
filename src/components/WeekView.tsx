@@ -83,28 +83,21 @@ export default function WeekView() {
           </div>
 
           {/* Week/Boxes Columns */}
-          {getWeekDays(userSelectedDate).map(({ currentDate }, dayIndex) => (
-            <div
-              key={dayIndex}
-              className="relative border-r border-gray-300 dark:border-gray-600"
-            >
-              {getHours.map((hour, hourIndex) => {
-                const dayEvents = getEventsForDay(events, currentDate).filter(
-                  (event) => {
-                    const eventHour = dayjs(event.startTime).hour();
-                    return eventHour === hour.hour();
-                  },
-                );
+          {getWeekDays(userSelectedDate).map(({ currentDate }, dayIndex) => {
+            // Get all events for this day
+            const dayEvents = getEventsForDay(events, currentDate);
 
-                return (
+            return (
+              <div
+                key={dayIndex}
+                className="relative border-r border-gray-300 dark:border-gray-600"
+              >
+                {/* Hour grid slots */}
+                {getHours.map((hour, hourIndex) => (
                   <div
                     key={hourIndex}
-                    className="group relative flex h-16 cursor-pointer flex-col items-center gap-y-2 border-b border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                    onClick={() => {
-                      if (dayEvents.length === 0) {
-                        handleAddEvent(hour, currentDate);
-                      }
-                    }}
+                    className="group relative flex h-16 cursor-pointer border-b border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+                    onClick={() => handleAddEvent(hour, currentDate)}
                   >
                     {/* Center Plus Button */}
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -118,30 +111,33 @@ export default function WeekView() {
                         <PlusCircle className="h-6 w-6 text-emerald-500 transition-colors hover:text-emerald-600" />
                       </button>
                     </div>
-
-                    {dayEvents.map((event) => (
-                      <EventRenderer
-                        key={event.id}
-                        event={event}
-                        onClick={handleEventClick}
-                        variant="week"
-                      />
-                    ))}
                   </div>
-                );
-              })}
+                ))}
 
-              {/* Current time indicator */}
-              {isCurrentDay(currentDate) && (
-                <div
-                  className={cn("absolute h-0.5 w-full bg-red-500")}
-                  style={{
-                    top: `${(currentTime.hour() / 24) * 100}%`,
-                  }}
-                />
-              )}
-            </div>
-          ))}
+                {/* Render all events for this day with absolute positioning */}
+                {dayEvents.map((event) => (
+                  <EventRenderer
+                    key={event.id}
+                    event={event}
+                    onClick={handleEventClick}
+                    variant="week"
+                    isSpanned={true}
+                  />
+                ))}
+
+                {/* Current time indicator */}
+                {isCurrentDay(currentDate) && (
+                  <div
+                    className={cn("absolute h-0.5 w-full bg-red-500")}
+                    style={{
+                      top: `${currentTime.hour() * 64 + (currentTime.minute() * 64) / 60}px`,
+                      zIndex: 20,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </ScrollArea>
 
