@@ -28,6 +28,20 @@ interface Event {
   categoryId: string;
   createdAt: Date;
   updatedAt: Date;
+  hostName?: string;
+  hostId?: string;
+}
+
+interface ContactRequest {
+  id: string;
+  type: "contact_request";
+  fromUserId?: string;
+  fromUserName?: string;
+  fromUserEmail?: string;
+  fromUserAvatar?: string;
+  message: string;
+  createdAt: string;
+  viewed: boolean;
 }
 
 interface PageProps {
@@ -110,12 +124,19 @@ async function getEventInvitations(userId: string): Promise<Event[]> {
   if (!user[0]) return [];
 
   // Get events where the user is invited as a guest AND hasn't accepted yet
+  // Include host information by joining with the users table
   const result = await db
     .select({
       event: events,
+      host: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      },
     })
     .from(eventGuests)
     .innerJoin(events, eq(eventGuests.eventId, events.id))
+    .innerJoin(users, eq(events.userId, users.id))
     .where(
       and(
         eq(eventGuests.email, user[0].email),
@@ -123,7 +144,32 @@ async function getEventInvitations(userId: string): Promise<Event[]> {
       ),
     );
 
-  return result.map((r) => r.event);
+  return result.map((r) => ({
+    ...r.event,
+    hostId: r.host.id,
+    hostName: `${r.host.firstName} ${r.host.lastName}`,
+  }));
+}
+
+async function getContactRequests(userId: string) {
+  // Get the user's notifications
+  const user = await db
+    .select({
+      notifications: users.notifications,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user[0]) return [];
+
+  const notifications = user[0].notifications || [];
+
+  // Filter to only contact requests and cast to proper type
+  return notifications.filter(
+    (notification): notification is ContactRequest =>
+      notification.type === "contact_request",
+  );
 }
 
 export default async function UserProfilePage({ params }: PageProps) {
@@ -134,9 +180,10 @@ export default async function UserProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  const [userEvents, invitations] = await Promise.all([
+  const [userEvents, invitations, contactRequests] = await Promise.all([
     getUserEvents(userId),
     getEventInvitations(userId),
+    getContactRequests(userId),
   ]);
 
   return (
@@ -144,6 +191,7 @@ export default async function UserProfilePage({ params }: PageProps) {
       user={user}
       events={userEvents}
       invitations={invitations}
+      contactRequests={contactRequests}
     />
   );
 }

@@ -102,16 +102,30 @@ interface GroupData {
   memberIds: string[];
 }
 
+interface ContactRequest {
+  id: string;
+  type: "contact_request";
+  fromUserId?: string;
+  fromUserName?: string;
+  fromUserEmail?: string;
+  fromUserAvatar?: string;
+  message: string;
+  createdAt: string;
+  viewed: boolean;
+}
+
 interface UserProfileClientProps {
   user: User;
   events: Event[];
   invitations: Event[];
+  contactRequests: ContactRequest[];
 }
 
 export default function UserProfileClient({
   user,
   events,
   invitations: initialInvitations,
+  contactRequests: initialContactRequests,
 }: UserProfileClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -133,6 +147,9 @@ export default function UserProfileClient({
   const [isAddingEvent, setIsAddingEvent] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [invitations, setInvitations] = useState(initialInvitations);
+  const [contactRequests, setContactRequests] = useState(
+    initialContactRequests,
+  );
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<"all" | "created" | "invited">(
     "all",
@@ -198,6 +215,63 @@ export default function UserProfileClient({
 
     return filtered;
   })();
+
+  const handleAcceptContactRequest = async (notificationId: string) => {
+    try {
+      const response = await fetch(
+        `/api/users/${user.id}/notifications/contact-requests/accept`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notificationId }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to accept contact request");
+      }
+
+      // Remove the accepted request from the local state
+      setContactRequests((prev) =>
+        prev.filter((req) => req.id !== notificationId),
+      );
+
+      // Refresh contacts to show the new contact
+      loadContacts();
+    } catch (error) {
+      console.error("Error accepting contact request:", error);
+    }
+  };
+
+  const handleDeclineContactRequest = async (notificationId: string) => {
+    try {
+      const response = await fetch(
+        `/api/users/${user.id}/notifications/contact-requests/decline`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notificationId }),
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to decline contact request");
+      }
+
+      // Remove the declined request from the local state
+      setContactRequests((prev) =>
+        prev.filter((req) => req.id !== notificationId),
+      );
+    } catch (error) {
+      console.error("Error declining contact request:", error);
+    }
+  };
 
   const handleAddToCalendar = async (event: Event) => {
     try {
@@ -1097,14 +1171,65 @@ export default function UserProfileClient({
               <TabsContent value="notifications">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Event Invitations</CardTitle>
+                    <CardTitle>Notifications</CardTitle>
                     <CardDescription>
-                      Events you&apos;ve been invited to participate in.
+                      Event invitations and contact requests.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[400px]">
                       <div className="space-y-4">
+                        {/* Contact Requests */}
+                        {contactRequests.map((request) => (
+                          <div
+                            key={request.id}
+                            className="flex items-start justify-between rounded-lg border border-orange-200 bg-orange-50 p-4"
+                          >
+                            <div className="space-y-1">
+                              <h3 className="font-medium text-orange-900">
+                                Contact Request
+                              </h3>
+                              <p className="text-sm text-orange-700">
+                                {request.fromUserName} wants to connect with you
+                              </p>
+                              <p className="text-xs text-orange-600">
+                                {new Date(request.createdAt).toLocaleDateString(
+                                  "en-GB",
+                                  {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() =>
+                                  handleAcceptContactRequest(request.id)
+                                }
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeclineContactRequest(request.id)
+                                }
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Event Invitations */}
                         {invitations.map((event) => (
                           <div
                             key={event.id}
@@ -1182,11 +1307,17 @@ export default function UserProfileClient({
                             </div>
                           </div>
                         ))}
-                        {invitations.length === 0 && (
-                          <div className="text-muted-foreground py-8 text-center">
-                            <p>No pending invitations.</p>
-                          </div>
-                        )}
+                        {invitations.length === 0 &&
+                          contactRequests.length === 0 && (
+                            <div className="text-muted-foreground py-8 text-center">
+                              <Bell className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+                              <p>No pending notifications.</p>
+                              <p className="mt-2 text-sm">
+                                Event invitations and contact requests will
+                                appear here.
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </ScrollArea>
                   </CardContent>
