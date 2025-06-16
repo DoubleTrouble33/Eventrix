@@ -209,16 +209,19 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
             baseEndDate = startDateTime.add(2, "week").subtract(1, "day");
             break;
           case "month":
-            baseEndDate = startDateTime.add(1, "month").subtract(1, "day");
+            // For month duration, end at the last day of the current month
+            baseEndDate = startDateTime.endOf("month");
             break;
           case "3months":
-            baseEndDate = startDateTime.add(3, "month").subtract(1, "day");
+            // For 3 months, end at the last day of the 3rd month from start
+            baseEndDate = startDateTime.add(2, "month").endOf("month");
             break;
           case "6months":
-            baseEndDate = startDateTime.add(6, "month").subtract(1, "day");
+            // For 6 months, end at the last day of the 6th month from start
+            baseEndDate = startDateTime.add(5, "month").endOf("month");
             break;
           default:
-            baseEndDate = startDateTime.add(1, "month").subtract(1, "day");
+            baseEndDate = startDateTime.endOf("month");
         }
 
         // Find the last occurrence of the event based on selected days

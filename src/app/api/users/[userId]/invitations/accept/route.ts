@@ -65,6 +65,31 @@ export async function POST(
       );
     }
 
+    // Remove the corresponding notification from user's notifications array
+    const userWithNotifications = await db
+      .select({
+        notifications: users.notifications,
+      })
+      .from(users)
+      .where(eq(users.id, params.userId))
+      .limit(1);
+
+    if (userWithNotifications[0]) {
+      const currentNotifications = userWithNotifications[0].notifications || [];
+      const updatedNotifications = currentNotifications.filter(
+        (notification) =>
+          !(
+            notification.type === "event_invitation" &&
+            notification.eventId === eventId
+          ),
+      );
+
+      await db
+        .update(users)
+        .set({ notifications: updatedNotifications })
+        .where(eq(users.id, params.userId));
+    }
+
     // Get the user's current calendars
     const userWithCalendars = await db
       .select({

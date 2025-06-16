@@ -99,8 +99,9 @@ export async function POST(request: Request) {
 
       const [event] = await db.insert(events).values(newEvent).returning();
 
-      // If there are guests, add them
+      // If there are guests, add them and create notifications
       if (guests.length > 0) {
+        // Create event guest entries
         await db.insert(eventGuests).values(
           guests.map((guest: { name: string; email: string }) => ({
             eventId: event.id,
@@ -108,6 +109,60 @@ export async function POST(request: Request) {
             email: guest.email,
           })),
         );
+
+        // Get host user's name for notifications
+        const [hostUser] = await db
+          .select({
+            firstName: users.firstName,
+            lastName: users.lastName,
+          })
+          .from(users)
+          .where(eq(users.id, session.user.id));
+
+        const hostName = hostUser
+          ? `${hostUser.firstName} ${hostUser.lastName}`
+          : "Someone";
+
+        // Create notifications for each guest
+        for (const guest of guests) {
+          // Find the user by email to add notification to their notifications array
+          const guestUser = await db
+            .select({
+              id: users.id,
+              notifications: users.notifications,
+            })
+            .from(users)
+            .where(eq(users.email, guest.email))
+            .limit(1);
+
+          if (guestUser[0]) {
+            // User exists, add notification
+            const currentNotifications = guestUser[0].notifications || [];
+            const newNotification = {
+              id: `event_invitation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              type: "event_invitation" as const,
+              fromUserId: session.user.id,
+              fromUserName: hostName,
+              fromUserEmail: session.user.email,
+              eventId: event.id,
+              eventTitle: title,
+              hostName: hostName,
+              message: `${hostName} invited you to "${title}"`,
+              createdAt: new Date().toISOString(),
+              viewed: false,
+            };
+
+            const updatedNotifications = [
+              ...currentNotifications,
+              newNotification,
+            ];
+
+            await db
+              .update(users)
+              .set({ notifications: updatedNotifications })
+              .where(eq(users.id, guestUser[0].id));
+          }
+        }
       }
 
       // Get the created event with its guests

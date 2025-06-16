@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { eventGuests, events } from "@/db/schema";
+import { eventGuests, events, users } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 
@@ -93,6 +93,57 @@ export async function POST(
         viewed: false,
       })
       .returning();
+
+    // If this is an invitation (not auto-joining a public event), create a notification
+    if (!isJoiningPublicEvent) {
+      // Get host user's name for notifications
+      const [hostUser] = await db
+        .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
+        })
+        .from(users)
+        .where(eq(users.id, session.user.id));
+
+      const hostName = hostUser
+        ? `${hostUser.firstName} ${hostUser.lastName}`
+        : "Someone";
+
+      // Find the user by email to add notification to their notifications array
+      const guestUser = await db
+        .select({
+          id: users.id,
+          notifications: users.notifications,
+        })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (guestUser[0]) {
+        // User exists, add notification
+        const currentNotifications = guestUser[0].notifications || [];
+        const newNotification = {
+          id: `event_invitation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: "event_invitation" as const,
+          fromUserId: session.user.id,
+          fromUserName: hostName,
+          fromUserEmail: session.user.email,
+          eventId: params.eventId,
+          eventTitle: event[0].title,
+          hostName: hostName,
+          message: `${hostName} invited you to "${event[0].title}"`,
+          createdAt: new Date().toISOString(),
+          viewed: false,
+        };
+
+        const updatedNotifications = [...currentNotifications, newNotification];
+
+        await db
+          .update(users)
+          .set({ notifications: updatedNotifications })
+          .where(eq(users.id, guestUser[0].id));
+      }
+    }
 
     return NextResponse.json({ guest });
   } catch (error) {
