@@ -117,12 +117,25 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
           const data = await response.json();
           // The API returns the array directly, not wrapped in a users property
           const users = Array.isArray(data) ? data : [];
-          // Filter out already selected guests
+          // Map the user data to match expected format and filter out already selected guests
           setSearchResults(
-            users.filter(
-              (user: { id: string }) =>
-                !selectedGuests.some((guest) => guest.id === user.id),
-            ),
+            users
+              .map(
+                (user: {
+                  id: string;
+                  email: string;
+                  firstName: string;
+                  lastName: string;
+                }) => ({
+                  id: user.id,
+                  email: user.email,
+                  name: `${user.firstName} ${user.lastName}`,
+                }),
+              )
+              .filter(
+                (user: { id: string; email: string; name: string }) =>
+                  !selectedGuests.some((guest) => guest.email === user.email),
+              ),
           );
         }
       } catch (error) {
@@ -775,7 +788,9 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
                         type="button"
                         onClick={() =>
                           setSelectedGuests(
-                            selectedGuests.filter((g) => g.id !== guest.id),
+                            selectedGuests.filter(
+                              (g) => g.email !== guest.email,
+                            ),
                           )
                         }
                         className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"

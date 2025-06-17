@@ -99,83 +99,105 @@ export async function POST(request: Request) {
 
       // If there are guests, add them and create notifications
       if (guests.length > 0) {
-        // Create event guest entries
-        await db.insert(eventGuests).values(
-          guests.map((guest: { name: string; email: string }) => ({
-            eventId: event.id,
-            name: guest.name,
-            email: guest.email,
-          })),
-        );
+        try {
+          // Create event guest entries
+          await db.insert(eventGuests).values(
+            guests.map((guest: { name: string; email: string }) => ({
+              eventId: event.id,
+              name: guest.name,
+              email: guest.email,
+            })),
+          );
 
-        // Get host user's name for notifications
-        const [hostUser] = await db
-          .select({
-            firstName: users.firstName,
-            lastName: users.lastName,
-          })
-          .from(users)
-          .where(eq(users.id, session.user.id));
-
-        const hostName = hostUser
-          ? `${hostUser.firstName} ${hostUser.lastName}`
-          : "Someone";
-
-        // Create notifications for each guest
-        for (const guest of guests) {
-          // Find the user by email to add notification to their notifications array
-          const guestUser = await db
+          // Get host user's name for notifications
+          const [hostUser] = await db
             .select({
-              id: users.id,
-              notifications: users.notifications,
+              firstName: users.firstName,
+              lastName: users.lastName,
             })
             .from(users)
-            .where(eq(users.email, guest.email))
-            .limit(1);
+            .where(eq(users.id, session.user.id));
 
-          if (guestUser[0]) {
-            // User exists, add notification
-            const currentNotifications = guestUser[0].notifications || [];
-            const newNotification = {
-              id: `event_invitation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              type: "event_invitation" as const,
-              fromUserId: session.user.id,
-              fromUserName: hostName,
-              fromUserEmail: session.user.email,
-              eventId: event.id,
-              eventTitle: title,
-              hostName: hostName,
-              message: `${hostName} invited you to "${title}"`,
-              createdAt: new Date().toISOString(),
-              viewed: false,
-            };
+          const hostName = hostUser
+            ? `${hostUser.firstName} ${hostUser.lastName}`
+            : "Someone";
 
-            const updatedNotifications = [
-              ...currentNotifications,
-              newNotification,
-            ];
+          // Create notifications for each guest
+          for (const guest of guests) {
+            try {
+              // Find the user by email to add notification to their notifications array
+              const guestUser = await db
+                .select({
+                  id: users.id,
+                  notifications: users.notifications,
+                })
+                .from(users)
+                .where(eq(users.email, guest.email))
+                .limit(1);
 
-            await db
-              .update(users)
-              .set({ notifications: updatedNotifications })
-              .where(eq(users.id, guestUser[0].id));
+              if (guestUser[0]) {
+                // User exists, add notification
+                const currentNotifications = guestUser[0].notifications || [];
+                const newNotification = {
+                  id: `event_invitation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  type: "event_invitation" as const,
+                  fromUserId: session.user.id,
+                  fromUserName: hostName,
+                  fromUserEmail: session.user.email || "", // Add fallback for email
+                  eventId: event.id,
+                  eventTitle: title,
+                  hostName: hostName,
+                  message: `${hostName} invited you to "${title}"`,
+                  createdAt: new Date().toISOString(),
+                  viewed: false,
+                };
+
+                const updatedNotifications = [
+                  ...currentNotifications,
+                  newNotification,
+                ];
+
+                await db
+                  .update(users)
+                  .set({ notifications: updatedNotifications })
+                  .where(eq(users.id, guestUser[0].id));
+              }
+            } catch (notificationError) {
+              console.error(
+                `Failed to create notification for guest ${guest.email}:`,
+                notificationError,
+              );
+              // Continue with other guests even if one fails
+            }
           }
+        } catch (guestError) {
+          console.error("Error processing guests:", guestError);
+          // Don't throw here - we want the event creation to succeed even if guest processing fails
         }
       }
 
       // Get the created event with its guests
-      const [createdEvent] = await db
-        .select()
-        .from(events)
-        .where(eq(events.id, event.id));
+      let createdEvent;
+      let eventGuestsList: EventGuest[] = [];
 
-      const eventGuestsList =
-        guests.length > 0
-          ? await db
-              .select()
-              .from(eventGuests)
-              .where(eq(eventGuests.eventId, event.id))
-          : [];
+      try {
+        [createdEvent] = await db
+          .select()
+          .from(events)
+          .where(eq(events.id, event.id));
+
+        if (guests.length > 0) {
+          eventGuestsList = await db
+            .select()
+            .from(eventGuests)
+            .where(eq(eventGuests.eventId, event.id));
+        }
+      } catch (fetchError) {
+        console.error("Error fetching created event details:", fetchError);
+        // Return the basic event data if we can't fetch the full details
+        createdEvent = event;
+        eventGuestsList = [];
+      }
 
       return NextResponse.json({
         event: {
