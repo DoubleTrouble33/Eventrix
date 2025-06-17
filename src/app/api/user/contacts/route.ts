@@ -11,7 +11,6 @@ export async function GET() {
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-      console.error("No token found in cookies");
       return new Response(
         JSON.stringify({ error: "Unauthorized", details: "No token provided" }),
         { status: 401, headers: { "Content-Type": "application/json" } },
@@ -20,7 +19,6 @@ export async function GET() {
 
     const decoded = await verifyJwtToken(token);
     if (!decoded || !decoded.userId) {
-      console.error("Invalid token or missing userId:", decoded);
       return new Response(
         JSON.stringify({ error: "Unauthorized", details: "Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json" } },
@@ -33,7 +31,6 @@ export async function GET() {
       });
 
       if (!user) {
-        console.error("User not found:", decoded.userId);
         return new Response(
           JSON.stringify({ error: "Not Found", details: "User not found" }),
           { status: 404, headers: { "Content-Type": "application/json" } },
@@ -73,7 +70,6 @@ export async function PUT(request: Request) {
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-      console.error("No token found in cookies");
       return new Response(
         JSON.stringify({ error: "Unauthorized", details: "No token provided" }),
         { status: 401, headers: { "Content-Type": "application/json" } },
@@ -82,7 +78,6 @@ export async function PUT(request: Request) {
 
     const decoded = await verifyJwtToken(token);
     if (!decoded || !decoded.userId) {
-      console.error("Invalid token or missing userId:", decoded);
       return new Response(
         JSON.stringify({ error: "Unauthorized", details: "Invalid token" }),
         { status: 401, headers: { "Content-Type": "application/json" } },
@@ -91,7 +86,6 @@ export async function PUT(request: Request) {
 
     const { contacts }: { contacts: UserContactsType } = await request.json();
     if (!contacts || typeof contacts !== "object") {
-      console.error("Invalid contacts data:", contacts);
       return new Response(
         JSON.stringify({
           error: "Bad Request",
@@ -110,7 +104,6 @@ export async function PUT(request: Request) {
         .returning();
 
       if (!updatedUser) {
-        console.error("Failed to update user:", decoded.userId);
         return new Response(
           JSON.stringify({
             error: "Not Found",

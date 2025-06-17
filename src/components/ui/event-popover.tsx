@@ -265,14 +265,6 @@ export function EventPopover({ selectedDate, onClose }: EventPopoverProps) {
         })),
       };
 
-      console.log("Client sending to server:", {
-        startTime: eventData.startTime,
-        endTime: eventData.endTime,
-        localStartTime: startDateTime.format("YYYY-MM-DD HH:mm:ss"),
-        localEndTime: endDateTime.format("YYYY-MM-DD HH:mm:ss"),
-        timezone: dayjs.tz.guess(),
-      });
-
       const response = await fetch("/api/events", {
         method: "POST",
         headers: {

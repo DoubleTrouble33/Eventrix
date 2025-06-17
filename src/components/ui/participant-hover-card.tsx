@@ -71,7 +71,6 @@ export function ParticipantHoverCard({
 
   const handleAddContact = async () => {
     if (!participant.email) {
-      console.error("Cannot add contact without email");
       return;
     }
 

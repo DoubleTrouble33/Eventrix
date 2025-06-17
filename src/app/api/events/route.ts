@@ -74,20 +74,11 @@ export async function POST(request: Request) {
 
       // Convert dates to UTC for storage - assume incoming dates are ISO strings or properly formatted
       // The client should send properly formatted datetime strings
-      console.log("Received from client:", { startTime, endTime });
-
       const startTimeUTC = dayjs(startTime).utc().toISOString();
       const endTimeUTC = dayjs(endTime).utc().toISOString();
       const repeatEndDateUTC = repeatEndDate
         ? dayjs(repeatEndDate).utc().toISOString()
         : null;
-
-      console.log("Converting to UTC:", {
-        startTimeUTC,
-        endTimeUTC,
-        originalStart: startTime,
-        originalEnd: endTime,
-      });
 
       // Create the event with proper typing
       const newEvent: NewEvent = {
