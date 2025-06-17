@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -380,20 +379,48 @@ export default function UserProfileClient({
       const contactsData = data.contacts || { organized: {}, unorganized: {} };
 
       // Convert unorganized contacts to Contact array
-      const contactsArray: Contact[] = Object.entries(
-        contactsData.unorganized || {},
-      ).map(([id, contact]) => {
-        const contactData = contact as ContactData;
-        return {
-          id,
-          firstName: contactData.firstName,
-          lastName: contactData.lastName,
-          email: contactData.email,
-          avatar: contactData.avatar,
-          status: contactData.status as "active" | "pending" | "declined",
-          addedAt: new Date(contactData.addedAt),
-        };
-      });
+      const contactsArray: Contact[] = await Promise.all(
+        Object.entries(contactsData.unorganized || {}).map(
+          async ([id, contact]) => {
+            const contactData = contact as ContactData;
+
+            // Fetch fresh user data to get current avatar
+            let currentAvatar = contactData.avatar || "/img/avatar-demo.png";
+            try {
+              const userSearchResponse = await fetch(
+                `/api/users/search?q=${encodeURIComponent(contactData.email)}`,
+                { credentials: "include" },
+              );
+              if (userSearchResponse.ok) {
+                const users = await userSearchResponse.json();
+                const foundUser = users.find(
+                  (u: User) => u.email === contactData.email,
+                );
+                if (foundUser && foundUser.avatar) {
+                  currentAvatar = foundUser.avatar;
+                }
+              }
+            } catch (error) {
+              console.error(
+                "Error fetching fresh avatar for contact:",
+                contactData.email,
+                error,
+              );
+              // Continue with stored avatar if fetch fails
+            }
+
+            return {
+              id,
+              firstName: contactData.firstName,
+              lastName: contactData.lastName,
+              email: contactData.email,
+              avatar: currentAvatar,
+              status: contactData.status as "active" | "pending" | "declined",
+              addedAt: new Date(contactData.addedAt),
+            };
+          },
+        ),
+      );
 
       // Convert organized groups to ContactGroup array
       const groupsArray: ContactGroup[] = Object.entries(
@@ -741,7 +768,7 @@ export default function UserProfileClient({
       <div className="sticky top-0 z-50 w-full border-b bg-white">
         <div className="flex h-16 items-center px-4 md:px-6">
           <Link href="/" className="mr-8">
-            <Image
+            <img
               src="/img/Eventrix.svg"
               alt="Eventrix Logo"
               width={120}
@@ -1375,12 +1402,18 @@ export default function UserProfileClient({
                             >
                               <div className="flex items-center space-x-4">
                                 <div className="relative">
-                                  <Image
-                                    src={contact.avatar}
+                                  <img
+                                    src={
+                                      contact.avatar || "/img/avatar-demo.png"
+                                    }
                                     alt={`${contact.firstName} ${contact.lastName}`}
                                     width={48}
                                     height={48}
                                     className="rounded-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "/img/avatar-demo.png";
+                                    }}
                                   />
                                   <div
                                     className={`absolute -right-1 -bottom-1 h-4 w-4 rounded-full border-2 border-white ${
@@ -1596,7 +1629,7 @@ export default function UserProfileClient({
                               className="flex items-center justify-between rounded-lg border p-4"
                             >
                               <div className="flex items-center space-x-4">
-                                <Image
+                                <img
                                   src={
                                     searchUser.avatar || "/img/avatar-demo.png"
                                   }
@@ -1604,6 +1637,10 @@ export default function UserProfileClient({
                                   width={48}
                                   height={48}
                                   className="rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "/img/avatar-demo.png";
+                                  }}
                                 />
                                 <div>
                                   <h3 className="font-medium">
