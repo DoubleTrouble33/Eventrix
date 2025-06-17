@@ -140,7 +140,7 @@ export function LeftSide() {
             <Info className="mt-0.5 h-3 w-3 flex-shrink-0 text-gray-500 dark:text-gray-400" />
             <p className="text-xs text-gray-600 dark:text-gray-300">
               {isPublicView
-                ? "Showing all public events + your selected calendars"
+                ? "Showing all events from selected calendars + public events you're participating in"
                 : "Showing only events from your selected calendars"}
             </p>
           </div>

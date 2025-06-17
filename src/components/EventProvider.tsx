@@ -103,7 +103,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Filter events based on selected calendars
+        // Filter events based on selected calendars and public/private mode
         const filteredEvents = allEvents.filter((event: Event) => {
           // Always show events with deleted calendars (orphaned events)
           const calendarExists = calendars.some(
@@ -113,12 +113,22 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
             return true; // Show orphaned events
           }
 
-          // In PUBLIC view: Show events from selected calendars (both public and private)
+          // In PUBLIC view: Show events from selected calendars + public events you're participating in
           if (isPublicView) {
-            return selectedCalendars.includes(event.calendarId);
+            // Show events from selected calendars (your own calendars)
+            const isFromSelectedCalendar = selectedCalendars.includes(
+              event.calendarId,
+            );
+            if (isFromSelectedCalendar) {
+              return true; // Show all events from your selected calendars
+            }
+
+            // Also show public events from other users that you're participating in
+            // (These would be events where you're a guest, fetched from /api/events/public)
+            return event.isPublic === true;
           }
 
-          // In PRIVATE view: Only show selected calendar events
+          // In PRIVATE view: Only show events from YOUR selected calendars
           return selectedCalendars.includes(event.calendarId);
         });
 
