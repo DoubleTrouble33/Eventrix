@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 
 export async function GET(
   request: Request,
-  context: { params: { userId: string } },
+  context: { params: Promise<{ userId: string }> },
 ) {
   try {
     const session = await auth();
@@ -59,11 +59,12 @@ export async function GET(
 // Mark invitations as viewed
 export async function POST(
   request: Request,
-  { params }: { params: { userId: string } },
+  context: { params: Promise<{ userId: string }> },
 ) {
   try {
     const session = await auth();
-    if (!session || session.user.id !== params.userId) {
+    const { userId } = await context.params;
+    if (!session || session.user.id !== userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

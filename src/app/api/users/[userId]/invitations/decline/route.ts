@@ -9,7 +9,9 @@ export async function POST(
 ) {
   try {
     const { eventId } = await request.json();
-    const { userId } = await params;
+    const { userId } = params;
+
+    console.log("Decline invitation request:", { eventId, userId });
 
     if (!eventId) {
       return NextResponse.json(
@@ -31,6 +33,8 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    console.log("Found user:", user[0].email);
+
     // Delete the invitation (declining means removing it)
     const result = await db
       .delete(eventGuests)
@@ -41,6 +45,8 @@ export async function POST(
         ),
       )
       .returning();
+
+    console.log("Delete result:", result);
 
     if (result.length === 0) {
       return NextResponse.json(
@@ -67,6 +73,11 @@ export async function POST(
             notification.eventId === eventId
           ),
       );
+
+      console.log("Updating notifications:", {
+        before: currentNotifications.length,
+        after: updatedNotifications.length,
+      });
 
       await db
         .update(users)

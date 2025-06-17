@@ -95,6 +95,19 @@ export default function RightSide() {
 
     setIsRefreshing(true);
     try {
+      // First, clean up any stale notifications
+      try {
+        await fetch(`/api/users/${user.id}/invitations/cleanup`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (cleanupError) {
+        console.log(
+          "Note: Cleanup failed, continuing with fetch:",
+          cleanupError,
+        );
+      }
+
       // Fetch count of unviewed invitations
       const countResponse = await fetch(
         `/api/users/${user.id}/invitations/count?viewed=false`,
@@ -213,6 +226,11 @@ export default function RightSide() {
   const handleDeclineInvitation = async (eventId: string) => {
     if (!user) return;
 
+    console.log("Attempting to decline invitation:", {
+      eventId,
+      userId: user.id,
+    });
+
     try {
       const response = await fetch(
         `/api/users/${user.id}/invitations/decline`,
@@ -226,9 +244,18 @@ export default function RightSide() {
         },
       );
 
+      console.log("Decline response status:", response.status);
+
       if (!response.ok) {
-        throw new Error("Failed to decline invitation");
+        const errorData = await response.text();
+        console.error("Decline invitation error:", errorData);
+        throw new Error(
+          `Failed to decline invitation: ${response.status} ${errorData}`,
+        );
       }
+
+      const result = await response.json();
+      console.log("Decline invitation success:", result);
 
       // Refresh notifications to update counts and lists
       await fetchNotifications();

@@ -5,10 +5,11 @@ import { eq, and } from "drizzle-orm";
 
 export async function POST(
   request: Request,
-  { params }: { params: { userId: string } },
+  { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     const { eventId } = await request.json();
+    const { userId } = await params;
 
     if (!eventId) {
       return NextResponse.json(
@@ -23,7 +24,7 @@ export async function POST(
         email: users.email,
       })
       .from(users)
-      .where(eq(users.id, params.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (!user[0]) {
@@ -71,7 +72,7 @@ export async function POST(
         notifications: users.notifications,
       })
       .from(users)
-      .where(eq(users.id, params.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (userWithNotifications[0]) {
@@ -87,7 +88,7 @@ export async function POST(
       await db
         .update(users)
         .set({ notifications: updatedNotifications })
-        .where(eq(users.id, params.userId));
+        .where(eq(users.id, userId));
     }
 
     // Get the user's current calendars
@@ -96,7 +97,7 @@ export async function POST(
         calendars: users.calendars,
       })
       .from(users)
-      .where(eq(users.id, params.userId))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (userWithCalendars[0]) {
