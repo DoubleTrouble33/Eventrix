@@ -444,7 +444,7 @@ export default function LandingPage() {
                     preload="metadata"
                     className="pointer-events-none h-full w-full object-contain"
                   >
-                    <source src="/intro-demo.mp4" type="video/mp4" />
+                    <source src="/demo-for-landing.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                   {/* Play/Pause overlay indicator */}
