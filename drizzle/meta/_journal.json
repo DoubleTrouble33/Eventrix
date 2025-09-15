@@ -1,33 +1,12 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
       "version": "7",
-      "when": 1749032790288,
-      "tag": "0000_foamy_shadow_king",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1749063684262,
-      "tag": "0001_loose_the_enforcers",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1749065814334,
-      "tag": "0002_glorious_sister_grimm",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1750069961237,
-      "tag": "0003_tricky_white_queen",
+      "when": 1757948137150,
+      "tag": "0000_ambiguous_tyger_tiger",
       "breakpoints": true
     }
   ]

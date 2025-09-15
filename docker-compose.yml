@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: eventrix-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eventrix
+      POSTGRES_USER: eventrix
+      POSTGRES_PASSWORD: eventrix
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d
+volumes:
+  pgdata:

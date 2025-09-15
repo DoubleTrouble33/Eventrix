@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "calendars" jsonb DEFAULT '[{"id":"public","name":"Public Events","color":"#4CAF50","isDefault":true},{"id":"personal","name":"Personal","color":"#3B82F6"},{"id":"work","name":"Work","color":"#10B981"},{"id":"fitness","name":"Fitness","color":"#EF4444"}]'::jsonb;

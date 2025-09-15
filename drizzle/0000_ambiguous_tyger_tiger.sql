@@ -3,6 +3,8 @@ CREATE TABLE "event_guests" (
 	"event_id" uuid NOT NULL,
 	"email" text NOT NULL,
 	"name" text NOT NULL,
+	"viewed" boolean DEFAULT false NOT NULL,
+	"is_accepted" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -16,6 +18,8 @@ CREATE TABLE "events" (
 	"is_public" boolean DEFAULT false NOT NULL,
 	"is_repeating" boolean DEFAULT false NOT NULL,
 	"repeat_days" jsonb,
+	"repeat_end_date" timestamp,
+	"calendar_id" text NOT NULL,
 	"category_id" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -27,6 +31,12 @@ CREATE TABLE "users" (
 	"first_name" text NOT NULL,
 	"last_name" text NOT NULL,
 	"password" text NOT NULL,
+	"avatar" text DEFAULT '/img/avatar-demo.png',
+	"is_admin" boolean DEFAULT false NOT NULL,
+	"is_blocked" boolean DEFAULT false NOT NULL,
+	"calendars" jsonb DEFAULT '[{"id":"personal","name":"Personal","color":"#3B82F6"},{"id":"work","name":"Work","color":"#10B981"}]'::jsonb,
+	"contacts" jsonb DEFAULT '{"organized":{"work":{"name":"Work","color":"#10B981","memberIds":[]},"personal":{"name":"Personal","color":"#3B82F6","memberIds":[]}},"unorganized":{}}'::jsonb,
+	"notifications" jsonb DEFAULT '[]'::jsonb,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")

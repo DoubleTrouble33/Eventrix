@@ -1,1 +1,0 @@
-ALTER TABLE "event_guests" ADD COLUMN IF NOT EXISTS "is_accepted" boolean DEFAULT false NOT NULL; 
